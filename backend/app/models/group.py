@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, Boolean, ForeignKey, Enum as SAEnum, UniqueConstraint, Uuid
+from sqlalchemy import String, Boolean, ForeignKey, Enum as SAEnum, UniqueConstraint, Uuid, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -24,10 +24,10 @@ class Group(Base):
         Uuid, ForeignKey("users.id"), nullable=False
     )
     is_temporary: Mapped[bool] = mapped_column(Boolean, default=False)
-    expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
     # Relationships
@@ -54,9 +54,9 @@ class GroupMembership(Base):
         default=MembershipRole.MEMBER,
     )
     joined_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (UniqueConstraint("user_id", "group_id", name="uq_user_group"),)
 

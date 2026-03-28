@@ -124,3 +124,22 @@ class EdgeType(str, enum.Enum):
     DEPENDS_ON = "DEPENDS_ON"
     BLOCKS = "BLOCKS"
     REFERS_TO = "REFERS_TO"
+
+
+class ParticipantStatus(str, enum.Enum):
+    REGISTERED = "REGISTERED"
+    CONFIRMED = "CONFIRMED"
+    WITHDRAWN = "WITHDRAWN"
+
+
+class SyncJobType(str, enum.Enum):
+    MANUAL = "MANUAL"
+    POLLING = "POLLING"
+    WEBHOOK = "WEBHOOK"
+
+
+class SyncJobStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"

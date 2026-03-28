@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, Boolean, Enum as SAEnum, Uuid, JSON
+from sqlalchemy import String, Boolean, Enum as SAEnum, Uuid, JSON, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -35,5 +35,5 @@ class VisibilityPolicy(Base):
     )
     rule_expression_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )

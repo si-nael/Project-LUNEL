@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { Project } from "@/types";
 
@@ -23,6 +24,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function ProjectsPage() {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
     useEffect(() => {
         api.get<Project[]>("/projects")
@@ -44,7 +46,11 @@ export default function ProjectsPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {projects.map((p) => (
-                        <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                        <div
+                            key={p.id}
+                            className="bg-white rounded-xl border border-gray-200 p-5 cursor-pointer hover:border-blue-300 transition-colors"
+                            onClick={() => router.push(`/dashboard/projects/${p.id}`)}
+                        >
                             <div className="flex items-start justify-between mb-3">
                                 <h3 className="font-semibold text-gray-900 truncate flex-1">{p.title}</h3>
                                 <span className={`text-xs px-2 py-0.5 rounded ml-2 ${STATUS_COLORS[p.status] || ""}`}>
@@ -65,10 +71,10 @@ export default function ProjectsPage() {
                                 <div className="w-full bg-gray-100 rounded-full h-2">
                                     <div
                                         className={`rounded-full h-2 transition-all ${p.progress_percent === 100
-                                                ? "bg-green-500"
-                                                : p.progress_percent >= 50
-                                                    ? "bg-blue-500"
-                                                    : "bg-orange-400"
+                                            ? "bg-green-500"
+                                            : p.progress_percent >= 50
+                                                ? "bg-blue-500"
+                                                : "bg-orange-400"
                                             }`}
                                         style={{ width: `${p.progress_percent}%` }}
                                     />

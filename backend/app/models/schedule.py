@@ -3,7 +3,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     String, SmallInteger, Text, Boolean, ForeignKey,
-    Enum as SAEnum, Uuid, JSON,
+    Enum as SAEnum, Uuid, JSON, DateTime,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -28,8 +28,8 @@ class Schedule(Base):
         SAEnum(ScheduleSubtype, name="schedule_subtype_enum", create_constraint=True),
         nullable=False,
     )
-    start_at: Mapped[datetime] = mapped_column(nullable=False)
-    end_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    start_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     all_day: Mapped[bool] = mapped_column(Boolean, default=False)
     timezone: Mapped[str] = mapped_column(String(50), default="Asia/Seoul")
     status: Mapped[ScheduleStatus] = mapped_column(
@@ -66,10 +66,10 @@ class Schedule(Base):
         "metadata", JSON, nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), onupdate=func.now(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
     # Relationships

@@ -1,6 +1,9 @@
 from fastapi import APIRouter
 
-from app.api.v1 import auth, users, groups, schedules, projects, ratings, visibility_policies
+from app.api.v1 import (
+    auth, users, groups, schedules, projects, ratings,
+    visibility_policies, activity, notifications, competitions,
+)
 
 api_router = APIRouter()
 
@@ -14,4 +17,15 @@ api_router.include_router(
     visibility_policies.router,
     prefix="/visibility-policies",
     tags=["visibility-policies"],
+)
+api_router.include_router(activity.router, tags=["activity"])
+api_router.include_router(
+    notifications.router,
+    prefix="/notifications",
+    tags=["notifications"],
+)
+api_router.include_router(
+    competitions.router,
+    prefix="/competitions",
+    tags=["competitions"],
 )

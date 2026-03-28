@@ -5,18 +5,25 @@ from app.models.project import Project
 from app.models.schedule import Schedule
 from app.models.event import Event, ScheduleEventLink
 from app.models.rating import Rating
+from app.models.activity import ActivityNode, ActivityEdge
+from app.models.notification import Notification
+from app.models.competition import Competition, Participant, Submission, Scoreboard, SyncJob
 from app.models.enums import (
     UserRole, GroupType, MembershipRole, VisibilityScopeType,
     ProjectStatus, ScheduleType, ScheduleSubtype, ScheduleStatus,
     EventType, EventStatus, SyncState, EventLinkType,
     NodeType, NodeStatus, EdgeType,
+    ParticipantStatus, SyncJobType, SyncJobStatus,
 )
 
 __all__ = [
     "User", "Group", "GroupMembership", "VisibilityPolicy",
     "Project", "Schedule", "Event", "ScheduleEventLink", "Rating",
+    "ActivityNode", "ActivityEdge", "Notification",
+    "Competition", "Participant", "Submission", "Scoreboard", "SyncJob",
     "UserRole", "GroupType", "MembershipRole", "VisibilityScopeType",
     "ProjectStatus", "ScheduleType", "ScheduleSubtype", "ScheduleStatus",
     "EventType", "EventStatus", "SyncState", "EventLinkType",
     "NodeType", "NodeStatus", "EdgeType",
+    "ParticipantStatus", "SyncJobType", "SyncJobStatus",
 ]

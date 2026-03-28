@@ -8,7 +8,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID, ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import UUID
 
 revision: str = "001"
 down_revision: Union[str, None] = None
@@ -81,10 +81,10 @@ def upgrade() -> None:
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("scope_type", visibility_scope, nullable=False),
         sa.Column("allow_public", sa.Boolean(), server_default=sa.text("false")),
-        sa.Column("allow_group_ids", ARRAY(UUID(as_uuid=True)), nullable=True),
-        sa.Column("allow_role_names", ARRAY(sa.String()), nullable=True),
-        sa.Column("deny_group_ids", ARRAY(UUID(as_uuid=True)), nullable=True),
-        sa.Column("rule_expression_json", JSONB, nullable=True),
+        sa.Column("allow_group_ids", sa.JSON(), nullable=True),
+        sa.Column("allow_role_names", sa.JSON(), nullable=True),
+        sa.Column("deny_group_ids", sa.JSON(), nullable=True),
+        sa.Column("rule_expression_json", sa.JSON(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
     )
 
@@ -142,7 +142,7 @@ def upgrade() -> None:
         sa.Column("project_id", UUID(as_uuid=True), sa.ForeignKey("projects.id"), nullable=True),
         sa.Column("related_event_id", UUID(as_uuid=True), sa.ForeignKey("events.id"), nullable=True),
         sa.Column("location", sa.String(200), nullable=True),
-        sa.Column("metadata", JSONB, nullable=True),
+        sa.Column("metadata", sa.JSON(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
     )

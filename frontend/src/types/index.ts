@@ -79,3 +79,71 @@ export interface TokenResponse {
     refresh_token: string;
     token_type: string;
 }
+
+// ── Phase 2 Types ────────────────────────────────────────────
+
+export interface ActivityNode {
+    id: string;
+    project_id: string;
+    parent_id: string | null;
+    related_schedule_id: string | null;
+    node_type: "MILESTONE" | "TASK" | "SUB_TASK";
+    title: string;
+    status: "PENDING" | "IN_PROGRESS" | "DONE" | "BLOCKED";
+    progress: number;
+    order_index: number;
+    created_at: string;
+}
+
+export interface ActivityEdge {
+    id: string;
+    from_node_id: string;
+    to_node_id: string;
+    edge_type: "DEPENDS_ON" | "RELATED_TO";
+}
+
+export interface Notification {
+    id: string;
+    user_id: string;
+    type: string;
+    title: string;
+    body: string | null;
+    related_schedule_id: string | null;
+    related_project_id: string | null;
+    is_read: boolean;
+    created_at: string;
+}
+
+export interface Competition {
+    id: string;
+    event_id: string;
+    max_participants: number | null;
+    scoring_rule: Record<string, unknown> | null;
+    created_at: string;
+}
+
+export interface Participant {
+    id: string;
+    competition_id: string;
+    user_id: string;
+    registered_at: string;
+    status: "REGISTERED" | "CHECKED_IN" | "DISQUALIFIED" | "WITHDRAWN";
+}
+
+export interface Submission {
+    id: string;
+    competition_id: string;
+    participant_id: string;
+    content: Record<string, unknown> | null;
+    score: number | null;
+    submitted_at: string;
+    graded_at: string | null;
+}
+
+export interface Scoreboard {
+    id: string;
+    competition_id: string;
+    snapshot_data: Record<string, unknown>;
+    is_final: boolean;
+    created_at: string;
+}

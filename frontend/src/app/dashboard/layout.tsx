@@ -11,6 +11,8 @@ const NAV_ITEMS = [
     { href: "/dashboard/schedules", label: "일정", icon: "📋" },
     { href: "/dashboard/projects", label: "프로젝트", icon: "📁" },
     { href: "/dashboard/groups", label: "그룹", icon: "👥" },
+    { href: "/dashboard/notifications", label: "알림", icon: "🔔" },
+    { href: "/dashboard/competitions", label: "대회", icon: "🏆" },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

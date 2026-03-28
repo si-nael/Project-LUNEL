@@ -12,6 +12,8 @@ from app.database import Base
 from app.models import (  # noqa: F401
     User, Group, GroupMembership, VisibilityPolicy,
     Project, Schedule, Event, ScheduleEventLink, Rating,
+    ActivityNode, ActivityEdge, Notification,
+    Competition, Participant, Submission, Scoreboard, SyncJob,
 )
 
 config = context.config
