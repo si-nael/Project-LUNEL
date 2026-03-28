@@ -1,0 +1,9 @@
+[project]
+name = "lunel-backend"
+version = "0.1.0"
+description = "Lunel System - 권한 기반 일정·프로젝트 통합 관리 플랫폼"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

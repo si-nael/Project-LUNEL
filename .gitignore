@@ -1,0 +1,30 @@
+# Backend
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.env
+*.db
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.production
