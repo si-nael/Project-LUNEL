@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { CalendarClock, AlertTriangle, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 function ImportanceBadge({ score }: { score: number }) {
     const variant =
@@ -77,7 +78,7 @@ export default function DashboardPage() {
     useEffect(() => {
         api.get<Schedule[]>("/schedules")
             .then(({ data }) => setSchedules(data))
-            .catch(() => { })
+            .catch(() => toast.error("일정을 불러올 수 없습니다."))
             .finally(() => setLoading(false));
     }, []);
 

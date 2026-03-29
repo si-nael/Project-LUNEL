@@ -38,7 +38,9 @@ export default function DAGPage() {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        api.get("/api/v1/projects").then((res) => setProjects(res.data));
+        api.get("/projects")
+            .then((res) => setProjects(res.data))
+            .catch(() => { });
     }, []);
 
     const loadDAG = async (projectId: string) => {
@@ -46,9 +48,9 @@ export default function DAGPage() {
         setError("");
         try {
             const [nodesRes, layersRes, cycleRes] = await Promise.all([
-                api.get(`/api/v1/projects/${projectId}/nodes`),
-                api.get(`/api/v1/projects/${projectId}/dag-layers`).catch(() => null),
-                api.get(`/api/v1/projects/${projectId}/dag-check`),
+                api.get(`/projects/${projectId}/nodes`),
+                api.get(`/projects/${projectId}/dag-layers`).catch(() => null),
+                api.get(`/projects/${projectId}/dag-check`),
             ]);
             setNodes(nodesRes.data);
             setLayers(layersRes?.data || null);
@@ -104,8 +106,8 @@ export default function DAGPage() {
             {cycleCheck && (
                 <div
                     className={`mb-4 p-3 rounded-xl text-xs ${cycleCheck.has_cycle
-                            ? "bg-destructive/8 text-destructive"
-                            : "bg-emerald-500/5 text-emerald-600"
+                        ? "bg-destructive/8 text-destructive"
+                        : "bg-emerald-500/5 text-emerald-600"
                         }`}
                 >
                     {cycleCheck.has_cycle

@@ -15,6 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, string> = {
     DRAFT: "초안",
@@ -42,7 +43,7 @@ export default function SchedulesPage() {
         if (filterStatus && filterStatus !== "__all__") params.set("status", filterStatus);
         api.get<Schedule[]>(`/schedules?${params}`)
             .then(({ data }) => setSchedules(data))
-            .catch(() => { })
+            .catch(() => toast.error("일정 목록을 불러올 수 없습니다."))
             .finally(() => setLoading(false));
     }, [filterType, filterStatus]);
 

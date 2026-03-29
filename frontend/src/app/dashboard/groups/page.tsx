@@ -3,6 +3,11 @@
 import { useEffect, useState, FormEvent } from "react";
 import { api } from "@/lib/api";
 import { Group } from "@/types";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const TYPE_LABELS: Record<string, string> = {
     SCHOOL: "학교",
@@ -27,7 +32,7 @@ export default function GroupsPage() {
     const fetchGroups = () => {
         api.get<Group[]>("/groups")
             .then(({ data }) => setGroups(data))
-            .catch(() => { })
+            .catch(() => toast.error("그룹 목록을 불러올 수 없습니다."))
             .finally(() => setLoading(false));
     };
 
@@ -44,7 +49,7 @@ export default function GroupsPage() {
             setName("");
             fetchGroups();
         } catch {
-            // ignore
+            toast.error("그룹 생성에 실패했습니다.");
         } finally {
             setSubmitting(false);
         }
@@ -68,26 +73,27 @@ export default function GroupsPage() {
                     className="glass rounded-2xl p-5 mb-6 space-y-4"
                 >
                     <div>
-                        <label className="block text-xs text-foreground/60 mb-1">
+                        <Label htmlFor="group-name" className="text-xs mb-1">
                             그룹명
-                        </label>
-                        <input
+                        </Label>
+                        <Input
+                            id="group-name"
                             type="text"
                             required
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full border border-border/60 bg-transparent rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring/40"
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs text-foreground/60 mb-1">
+                            <Label htmlFor="group-type" className="text-xs mb-1">
                                 유형
-                            </label>
+                            </Label>
                             <select
+                                id="group-type"
                                 value={type}
                                 onChange={(e) => setType(e.target.value)}
-                                className="w-full border border-border/60 bg-transparent rounded-xl px-3 py-2 text-sm"
+                                className="w-full border border-border bg-transparent rounded-xl px-3 py-2 text-sm"
                             >
                                 {Object.entries(TYPE_LABELS).map(([v, l]) => (
                                     <option key={v} value={v}>
@@ -108,13 +114,13 @@ export default function GroupsPage() {
                             </label>
                         </div>
                     </div>
-                    <button
+                    <Button
                         type="submit"
                         disabled={submitting}
-                        className="text-xs px-5 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-all"
+                        size="sm"
                     >
                         생성
-                    </button>
+                    </Button>
                 </form>
             )}
 

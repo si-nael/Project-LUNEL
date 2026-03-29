@@ -60,12 +60,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
             router.push("/login");
         }
     }, [loading, user, router]);
+
+    // Close mobile sidebar on route change
+    useEffect(() => {
+        setMobileOpen(false);
+    }, [pathname]);
 
     if (loading) {
         return (
@@ -88,11 +94,36 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return (
         <TooltipProvider delayDuration={0}>
             <div className="min-h-screen flex">
+                {/* Mobile overlay */}
+                {mobileOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+                        onClick={() => setMobileOpen(false)}
+                        aria-hidden="true"
+                    />
+                )}
+
+                {/* Mobile header */}
+                <header className="fixed top-0 left-0 right-0 h-14 flex items-center px-4 glass-subtle z-30 lg:hidden">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setMobileOpen(true)}
+                        aria-label="메뉴 열기"
+                    >
+                        <PanelLeft className="h-5 w-5" />
+                    </Button>
+                    <span className="ml-2 text-sm font-semibold tracking-tight">Lunel</span>
+                </header>
+
                 {/* Sidebar */}
                 <aside
+                    role="navigation"
+                    aria-label="메인 내비게이션"
                     className={cn(
-                        "flex flex-col transition-all duration-300 glass-subtle",
-                        collapsed ? "w-16" : "w-60"
+                        "fixed lg:sticky top-0 h-screen flex flex-col transition-all duration-300 glass-subtle z-50",
+                        collapsed ? "lg:w-16" : "lg:w-60",
+                        mobileOpen ? "w-60 translate-x-0" : "-translate-x-full lg:translate-x-0"
                     )}
                 >
                     {/* Logo */}
@@ -119,7 +150,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                                             "flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] transition-all duration-200",
                                             active
                                                 ? "bg-primary/8 text-primary font-medium"
-                                                : "text-foreground/45 hover:text-foreground/75 hover:bg-foreground/[0.03]",
+                                                : "text-muted-foreground hover:text-foreground hover:bg-foreground/[0.03]",
                                             collapsed && "justify-center px-0"
                                         )}
                                     >
@@ -152,7 +183,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                             variant="ghost"
                             size={collapsed ? "icon" : "sm"}
                             className={cn(
-                                "w-full text-foreground/35 hover:text-foreground/60 hover:bg-foreground/[0.03] mb-1",
+                                "w-full text-muted-foreground hover:text-foreground hover:bg-foreground/[0.03] mb-1",
                                 collapsed ? "justify-center" : "justify-start gap-3"
                             )}
                             onClick={() => setCollapsed(!collapsed)}
@@ -185,16 +216,16 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                                     </Avatar>
                                     {!collapsed && (
                                         <div className="flex-1 text-left min-w-0">
-                                            <p className="text-xs font-medium truncate text-foreground/70">
+                                            <p className="text-xs font-medium truncate text-foreground">
                                                 {user.name}
                                             </p>
-                                            <p className="text-[10px] text-foreground/35 truncate">
+                                            <p className="text-[10px] text-muted-foreground truncate">
                                                 {user.email}
                                             </p>
                                         </div>
                                     )}
                                     {!collapsed && (
-                                        <ChevronsUpDown className="h-3 w-3 text-foreground/25" />
+                                        <ChevronsUpDown className="h-3 w-3 text-muted-foreground" />
                                     )}
                                 </Button>
                             </DropdownMenuTrigger>
@@ -223,7 +254,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </aside>
 
                 {/* Main content */}
-                <main className="flex-1 overflow-auto">
+                <main className="flex-1 overflow-auto pt-14 lg:pt-0">
                     <div className="p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
                         {children}
                     </div>

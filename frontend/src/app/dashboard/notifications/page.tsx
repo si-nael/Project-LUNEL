@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Notification } from "@/types";
+import { toast } from "sonner";
 
 export default function NotificationsPage() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -13,7 +14,7 @@ export default function NotificationsPage() {
         const params = filter === "unread" ? "?unread_only=true" : "";
         api.get<Notification[]>(`/notifications${params}`)
             .then(({ data }) => setNotifications(data))
-            .catch(() => { })
+            .catch(() => toast.error("알림을 불러올 수 없습니다."))
             .finally(() => setLoading(false));
     };
 
@@ -23,15 +24,23 @@ export default function NotificationsPage() {
     }, [filter]);
 
     const markRead = async (id: string) => {
-        await api.patch(`/notifications/${id}/read`);
-        setNotifications((prev) =>
-            prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
-        );
+        try {
+            await api.patch(`/notifications/${id}/read`);
+            setNotifications((prev) =>
+                prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+            );
+        } catch {
+            toast.error("알림 읽음 처리에 실패했습니다.");
+        }
     };
 
     const markAllRead = async () => {
-        await api.post("/notifications/read-all");
-        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+        try {
+            await api.post("/notifications/read-all");
+            setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+        } catch {
+            toast.error("전체 읽음 처리에 실패했습니다.");
+        }
     };
 
     const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -77,8 +86,8 @@ export default function NotificationsPage() {
                         <div
                             key={n.id}
                             className={`glass rounded-2xl p-4 flex items-start gap-3 cursor-pointer transition-all duration-200 ${n.is_read
-                                    ? ""
-                                    : "ring-1 ring-primary/20"
+                                ? ""
+                                : "ring-1 ring-primary/20"
                                 }`}
                             onClick={() => !n.is_read && markRead(n.id)}
                         >
@@ -95,7 +104,7 @@ export default function NotificationsPage() {
                                         {n.body}
                                     </p>
                                 )}
-                                <p className="text-[11px] text-muted-foreground/60 mt-1">
+                                <p className="text-[11px] text-muted-foreground mt-1">
                                     {new Date(n.created_at).toLocaleString("ko-KR")}
                                 </p>
                             </div>

@@ -1,45 +1,43 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { api } from "@/lib/api";
-
-interface ScheduleEvent {
-    id: number;
-    title: string;
-    start_time: string;
-    end_time: string;
-    type: string;
-    subtype: string;
-    importance: number;
-}
+import { Schedule } from "@/types";
+import { toast } from "sonner";
+import Link from "next/link";
 
 const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
 const FILTER_OPTIONS = [
     { value: "all", label: "전체" },
-    { value: "project", label: "프로젝트" },
-    { value: "interval", label: "인터벌" },
-    { value: "event", label: "이벤트" },
+    { value: "PROJECT", label: "프로젝트" },
+    { value: "INTERVAL", label: "인터벌" },
+    { value: "EVENT", label: "이벤트" },
 ];
 
-function importanceColor(importance: number): string {
-    if (importance >= 8) return "bg-red-500/15 text-red-600 border-red-500/20";
-    if (importance >= 5)
-        return "bg-amber-500/15 text-amber-600 border-amber-500/20";
-    return "bg-foreground/[0.04] text-foreground/60 border-border/40";
+function importanceColor(score: number): string {
+    if (score >= 80) return "bg-red-500/15 text-red-700 border-red-500/20";
+    if (score >= 50)
+        return "bg-amber-500/15 text-amber-700 border-amber-500/20";
+    return "bg-primary/8 text-primary border-primary/15";
 }
 
 export default function CalendarPage() {
-    const { user } = useAuth();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewMode, setViewMode] = useState<"month" | "week">("month");
     const [filter, setFilter] = useState("all");
-    const [events, setEvents] = useState<ScheduleEvent[]>([]);
+    const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
+
+    useEffect(() => {
+        api.get<Schedule[]>("/schedules")
+            .then(({ data }) => setSchedules(data))
+            .catch(() => toast.error("일정을 불러올 수 없습니다."))
+            .finally(() => setLoading(false));
+    }, []);
 
     const goToPrev = () => {
         const d = new Date(currentDate);
@@ -74,21 +72,37 @@ export default function CalendarPage() {
         return days;
     }, [currentDate, viewMode, year, month]);
 
-    const eventsForDay = (date: Date | null) => {
-        if (!date) return [];
-        const dateStr = date.toISOString().slice(0, 10);
-        return events.filter((e) => {
-            if (filter !== "all" && e.type !== filter) return false;
-            const start = e.start_time.slice(0, 10);
-            const end = e.end_time.slice(0, 10);
-            return dateStr >= start && dateStr <= end;
-        });
-    };
+    const schedulesForDay = useCallback(
+        (date: Date | null) => {
+            if (!date) return [];
+            const dateStr = date.toISOString().slice(0, 10);
+            return schedules.filter((s) => {
+                if (filter !== "all" && s.type !== filter) return false;
+                const start = s.start_at.slice(0, 10);
+                const end = s.end_at ? s.end_at.slice(0, 10) : start;
+                return dateStr >= start && dateStr <= end;
+            });
+        },
+        [schedules, filter]
+    );
 
     const today = new Date().toISOString().slice(0, 10);
 
-    // Load events (simplified — could use useEffect with API call)
-    // useEffect to fetch events would go here in production
+    const selectedSchedules = selectedDate
+        ? schedules.filter((s) => {
+            const start = s.start_at.slice(0, 10);
+            const end = s.end_at ? s.end_at.slice(0, 10) : start;
+            return selectedDate >= start && selectedDate <= end;
+        })
+        : [];
+
+    if (loading) {
+        return (
+            <div className="flex justify-center py-20">
+                <div className="h-5 w-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -96,14 +110,14 @@ export default function CalendarPage() {
                 <h1 className="text-xl font-semibold tracking-tight">
                     캘린더
                 </h1>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                     {FILTER_OPTIONS.map((opt) => (
                         <button
                             key={opt.value}
                             onClick={() => setFilter(opt.value)}
-                            className={`px-3 py-1 text-[11px] rounded-full transition-all ${filter === opt.value
-                                    ? "bg-primary/10 text-primary font-medium"
-                                    : "text-foreground/50 hover:text-foreground/70 hover:bg-foreground/[0.03]"
+                            className={`px-3 py-1.5 text-xs rounded-lg transition-all ${filter === opt.value
+                                    ? "bg-primary text-primary-foreground font-medium"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                                 }`}
                         >
                             {opt.label}
@@ -116,35 +130,35 @@ export default function CalendarPage() {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={goToPrev}
-                        className="text-xs text-foreground/50 hover:text-foreground/80 transition-colors"
+                        className="text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-secondary"
                     >
-                        ← 이전
+                        ←
                     </button>
-                    <span className="text-sm font-medium">
+                    <span className="text-base font-semibold min-w-[120px] text-center">
                         {year}년 {month + 1}월
                     </span>
                     <button
                         onClick={goToNext}
-                        className="text-xs text-foreground/50 hover:text-foreground/80 transition-colors"
+                        className="text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-secondary"
                     >
-                        다음 →
+                        →
                     </button>
                 </div>
-                <div className="flex items-center rounded-xl border border-border/60 overflow-hidden">
+                <div className="flex items-center rounded-lg border border-border overflow-hidden">
                     <button
                         onClick={() => setViewMode("month")}
-                        className={`px-3 py-1 text-[11px] transition-all ${viewMode === "month"
-                                ? "bg-foreground/[0.06] font-medium"
-                                : "text-foreground/50 hover:bg-foreground/[0.03]"
+                        className={`px-3 py-1.5 text-xs transition-all ${viewMode === "month"
+                                ? "bg-primary text-primary-foreground font-medium"
+                                : "text-muted-foreground hover:bg-secondary"
                             }`}
                     >
                         월
                     </button>
                     <button
                         onClick={() => setViewMode("week")}
-                        className={`px-3 py-1 text-[11px] transition-all ${viewMode === "week"
-                                ? "bg-foreground/[0.06] font-medium"
-                                : "text-foreground/50 hover:bg-foreground/[0.03]"
+                        className={`px-3 py-1.5 text-xs transition-all ${viewMode === "week"
+                                ? "bg-primary text-primary-foreground font-medium"
+                                : "text-muted-foreground hover:bg-secondary"
                             }`}
                     >
                         주
@@ -153,15 +167,15 @@ export default function CalendarPage() {
             </div>
 
             <div className="glass rounded-2xl overflow-hidden">
-                <div className="grid grid-cols-7 bg-foreground/[0.03]">
+                <div className="grid grid-cols-7 border-b border-border/50">
                     {DAY_NAMES.map((day, i) => (
                         <div
                             key={i}
-                            className={`text-center py-2 text-[11px] font-medium ${i === 0
-                                    ? "text-red-500/70"
+                            className={`text-center py-2.5 text-xs font-medium ${i === 0
+                                    ? "text-red-600"
                                     : i === 6
-                                        ? "text-blue-500/70"
-                                        : "text-foreground/50"
+                                        ? "text-blue-600"
+                                        : "text-muted-foreground"
                                 }`}
                         >
                             {day}
@@ -171,7 +185,7 @@ export default function CalendarPage() {
                 <div className="grid grid-cols-7">
                     {calendarDays.map((date, i) => {
                         const dateStr = date?.toISOString().slice(0, 10) ?? "";
-                        const dayEvents = eventsForDay(date);
+                        const daySchedules = schedulesForDay(date);
                         const isToday = dateStr === today;
                         const isSelected = dateStr === selectedDate;
                         const dayNum = date?.getDate();
@@ -183,37 +197,37 @@ export default function CalendarPage() {
                                 onClick={() =>
                                     date && setSelectedDate(dateStr)
                                 }
-                                className={`min-h-[80px] p-1.5 border-t border-border/20 cursor-pointer transition-all hover:bg-foreground/[0.02] ${!date ? "bg-foreground/[0.01]" : ""
-                                    } ${isSelected ? "bg-primary/[0.04]" : ""}`}
+                                className={`min-h-[88px] p-1.5 border-t border-border/30 cursor-pointer transition-colors hover:bg-secondary/50 ${!date ? "bg-muted/30" : ""
+                                    } ${isSelected ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : ""}`}
                             >
                                 {date && (
                                     <>
                                         <span
-                                            className={`inline-flex items-center justify-center text-[11px] w-5 h-5 rounded-full ${isToday
-                                                    ? "bg-primary text-primary-foreground font-semibold"
+                                            className={`inline-flex items-center justify-center text-xs w-6 h-6 rounded-full font-medium ${isToday
+                                                    ? "bg-primary text-primary-foreground"
                                                     : dayOfWeek === 0
-                                                        ? "text-red-500/70"
+                                                        ? "text-red-600"
                                                         : dayOfWeek === 6
-                                                            ? "text-blue-500/70"
-                                                            : "text-foreground/60"
+                                                            ? "text-blue-600"
+                                                            : "text-foreground"
                                                 }`}
                                         >
                                             {dayNum}
                                         </span>
                                         <div className="mt-0.5 space-y-0.5">
-                                            {dayEvents
+                                            {daySchedules
                                                 .slice(0, 2)
-                                                .map((evt) => (
+                                                .map((s) => (
                                                     <div
-                                                        key={evt.id}
-                                                        className={`text-[9px] px-1 py-0.5 rounded border truncate ${importanceColor(evt.importance)}`}
+                                                        key={s.id}
+                                                        className={`text-[10px] px-1.5 py-0.5 rounded border truncate ${importanceColor(s.importance_score)}`}
                                                     >
-                                                        {evt.title}
+                                                        {s.title}
                                                     </div>
                                                 ))}
-                                            {dayEvents.length > 2 && (
-                                                <span className="text-[9px] text-foreground/40 pl-1">
-                                                    +{dayEvents.length - 2}건
+                                            {daySchedules.length > 2 && (
+                                                <span className="text-[10px] text-muted-foreground pl-1">
+                                                    +{daySchedules.length - 2}건
                                                 </span>
                                             )}
                                         </div>
@@ -224,6 +238,44 @@ export default function CalendarPage() {
                     })}
                 </div>
             </div>
+
+            {selectedDate && selectedSchedules.length > 0 && (
+                <div className="mt-4 glass rounded-2xl p-4">
+                    <h2 className="text-sm font-semibold mb-3">
+                        {selectedDate} 일정 ({selectedSchedules.length})
+                    </h2>
+                    <div className="space-y-2">
+                        {selectedSchedules.map((s) => (
+                            <Link
+                                key={s.id}
+                                href={`/dashboard/schedules/${s.id}`}
+                                className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors"
+                            >
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-medium truncate">
+                                        {s.title}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {new Date(s.start_at).toLocaleTimeString(
+                                            "ko-KR",
+                                            {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            }
+                                        )}
+                                        {s.location && ` · ${s.location}`}
+                                    </p>
+                                </div>
+                                <span
+                                    className={`text-xs font-medium px-2 py-0.5 rounded-full ${importanceColor(s.importance_score)}`}
+                                >
+                                    {s.importance_score}
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

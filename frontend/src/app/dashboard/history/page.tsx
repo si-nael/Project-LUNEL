@@ -35,8 +35,8 @@ export default function HistoryPage() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        api.get("/api/v1/schedules").then((res) => setSchedules(res.data));
-        api.get("/api/v1/projects").then((res) => setProjects(res.data));
+        api.get("/schedules").then((res) => setSchedules(res.data)).catch(() => { });
+        api.get("/projects").then((res) => setProjects(res.data)).catch(() => { });
     }, []);
 
     const loadHistory = async (id: string) => {
@@ -44,8 +44,8 @@ export default function HistoryPage() {
         try {
             const endpoint =
                 mode === "schedule"
-                    ? `/api/v1/schedules/${id}/history`
-                    : `/api/v1/projects/${id}/history`;
+                    ? `/schedules/${id}/history`
+                    : `/projects/${id}/history`;
             const res = await api.get(endpoint);
             setHistory(res.data);
         } catch {
@@ -80,8 +80,8 @@ export default function HistoryPage() {
                             setHistory([]);
                         }}
                         className={`px-4 py-1.5 text-xs transition-all ${mode === "schedule"
-                                ? "bg-primary text-primary-foreground"
-                                : "text-foreground/60 hover:text-foreground"
+                            ? "bg-primary text-primary-foreground"
+                            : "text-foreground/60 hover:text-foreground"
                             }`}
                     >
                         일정
@@ -93,8 +93,8 @@ export default function HistoryPage() {
                             setHistory([]);
                         }}
                         className={`px-4 py-1.5 text-xs transition-all ${mode === "project"
-                                ? "bg-primary text-primary-foreground"
-                                : "text-foreground/60 hover:text-foreground"
+                            ? "bg-primary text-primary-foreground"
+                            : "text-foreground/60 hover:text-foreground"
                             }`}
                     >
                         프로젝트

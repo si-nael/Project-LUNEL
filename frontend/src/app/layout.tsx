@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { cn } from "@/lib/utils";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -20,6 +21,7 @@ export default function RootLayout({
         <html lang="ko" suppressHydrationWarning>
             <body className={cn(inter.variable, "font-sans min-h-screen")}>
                 <Providers>{children}</Providers>
+                <Toaster position="bottom-right" richColors closeButton />
             </body>
         </html>
     );

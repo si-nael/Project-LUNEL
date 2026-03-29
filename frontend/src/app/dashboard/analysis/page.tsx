@@ -83,7 +83,7 @@ export default function AnalysisPage() {
         setError("");
         setResult(null);
         try {
-            const res = await api.post("/api/v1/analysis/expected-value", {
+            const res = await api.post("/analysis/expected-value", {
                 choices,
             });
             setResult(res.data);

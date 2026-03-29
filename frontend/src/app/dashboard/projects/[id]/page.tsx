@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { Project, ActivityNode } from "@/types";
+import { toast } from "sonner";
 
 const STATUS_LABELS: Record<string, string> = {
     PENDING: "대기",
@@ -44,22 +45,27 @@ export default function ProjectDetailPage() {
                 setProject(projRes.data);
                 setNodes(nodesRes.data);
             })
-            .catch(() => { })
+            .catch(() => toast.error("프로젝트를 불러올 수 없습니다."))
             .finally(() => setLoading(false));
     }, [id]);
 
     const addNode = async () => {
         if (!newTitle.trim()) return;
-        const { data } = await api.post<ActivityNode>(
-            `/projects/${id}/nodes`,
-            {
-                title: newTitle,
-                node_type: newType,
-                order_index: nodes.length,
-            }
-        );
-        setNodes((prev) => [...prev, data]);
-        setNewTitle("");
+        try {
+            const { data } = await api.post<ActivityNode>(
+                `/projects/${id}/nodes`,
+                {
+                    title: newTitle,
+                    node_type: newType,
+                    order_index: nodes.length,
+                }
+            );
+            setNodes((prev) => [...prev, data]);
+            setNewTitle("");
+            toast.success("노드가 추가되었습니다.");
+        } catch {
+            toast.error("노드 추가에 실패했습니다.");
+        }
     };
 
     const updateProgress = async (nodeId: string, progress: number) => {
@@ -71,11 +77,16 @@ export default function ProjectDetailPage() {
     };
 
     const markDone = async (nodeId: string) => {
-        const { data } = await api.patch<ActivityNode>(
-            `/projects/${id}/nodes/${nodeId}`,
-            { status: "DONE" }
-        );
-        setNodes((prev) => prev.map((n) => (n.id === nodeId ? data : n)));
+        try {
+            const { data } = await api.patch<ActivityNode>(
+                `/projects/${id}/nodes/${nodeId}`,
+                { status: "DONE" }
+            );
+            setNodes((prev) => prev.map((n) => (n.id === nodeId ? data : n)));
+            toast.success("완료 처리되었습니다.");
+        } catch {
+            toast.error("상태 변경에 실패했습니다.");
+        }
     };
 
     // Build tree structure
@@ -105,7 +116,7 @@ export default function ProjectDetailPage() {
                             style={{ width: `${node.progress}%` }}
                         />
                     </div>
-                    <span className="text-[11px] text-foreground/40 w-8 text-right">
+                    <span className="text-[11px] text-muted-foreground w-8 text-right">
                         {node.progress}%
                     </span>
                 </div>
@@ -201,7 +212,7 @@ export default function ProjectDetailPage() {
             {/* Task tree */}
             <div className="glass rounded-2xl p-4">
                 {nodes.length === 0 ? (
-                    <p className="text-xs text-foreground/40 text-center py-8">
+                    <p className="text-xs text-muted-foreground text-center py-8">
                         아직 작업 노드가 없습니다. 위에서 추가해 보세요.
                     </p>
                 ) : (
