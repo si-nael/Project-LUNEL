@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     app_name: str = "Lunel System"
     debug: bool = True
 
+    # CORS
+    cors_origins: str = "http://localhost:3000"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

@@ -10,7 +10,7 @@ from app.database import get_db
 from app.models.competition import (
     Competition, Participant, Submission, Scoreboard,
 )
-from app.models.enums import ParticipantStatus
+from app.models.enums import ParticipantStatus, UserRole
 from app.models.user import User
 from app.schemas.competition import (
     CompetitionCreate, CompetitionResponse,
@@ -30,6 +30,9 @@ async def create_competition(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role not in (UserRole.ADMIN, UserRole.TEACHER):
+        raise HTTPException(status_code=403, detail="관리자 또는 교사만 대회를 생성할 수 있습니다")
+
     comp = Competition(
         event_id=body.event_id,
         max_participants=body.max_participants,
@@ -163,6 +166,9 @@ async def grade_submission(
     if sub is None or sub.competition_id != competition_id:
         raise HTTPException(status_code=404, detail="Submission not found")
 
+    if current_user.role not in (UserRole.ADMIN, UserRole.TEACHER):
+        raise HTTPException(status_code=403, detail="관리자 또는 교사만 채점할 수 있습니다")
+
     sub.score = body.score
     sub.graded_at = datetime.now(timezone.utc)
     await db.flush()
@@ -183,6 +189,9 @@ async def generate_scoreboard(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role not in (UserRole.ADMIN, UserRole.TEACHER):
+        raise HTTPException(status_code=403, detail="관리자 또는 교사만 스코어보드를 생성할 수 있습니다")
+
     # Gather graded submissions and build snapshot
     result = await db.execute(
         select(Submission).where(

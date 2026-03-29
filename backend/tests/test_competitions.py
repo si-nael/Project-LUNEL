@@ -48,12 +48,12 @@ async def second_user(db_session: AsyncSession) -> User:
 @pytest.mark.asyncio
 class TestCompetitions:
     async def test_create_competition(
-        self, client: AsyncClient, test_user: User, test_event: Event
+        self, client: AsyncClient, admin_user: User, test_event: Event
     ):
         resp = await client.post(
             "/api/v1/competitions",
             json={"event_id": str(test_event.id), "max_participants": 10},
-            headers=auth_header(test_user),
+            headers=auth_header(admin_user),
         )
         assert resp.status_code == 201
         data = resp.json()
@@ -61,18 +61,18 @@ class TestCompetitions:
         assert data["max_participants"] == 10
 
     async def test_get_competition(
-        self, client: AsyncClient, test_user: User, test_event: Event
+        self, client: AsyncClient, admin_user: User, test_event: Event
     ):
         create = await client.post(
             "/api/v1/competitions",
             json={"event_id": str(test_event.id)},
-            headers=auth_header(test_user),
+            headers=auth_header(admin_user),
         )
         cid = create.json()["id"]
 
         resp = await client.get(
             f"/api/v1/competitions/{cid}",
-            headers=auth_header(test_user),
+            headers=auth_header(admin_user),
         )
         assert resp.status_code == 200
         assert resp.json()["id"] == cid
@@ -81,12 +81,12 @@ class TestCompetitions:
 @pytest.mark.asyncio
 class TestParticipants:
     async def test_register_and_list(
-        self, client: AsyncClient, test_user: User, test_event: Event
+        self, client: AsyncClient, test_user: User, admin_user: User, test_event: Event
     ):
         create = await client.post(
             "/api/v1/competitions",
             json={"event_id": str(test_event.id)},
-            headers=auth_header(test_user),
+            headers=auth_header(admin_user),
         )
         cid = create.json()["id"]
 
@@ -107,12 +107,12 @@ class TestParticipants:
         assert len(resp.json()) == 1
 
     async def test_capacity_limit(
-        self, client: AsyncClient, test_user: User, second_user: User, test_event: Event
+        self, client: AsyncClient, test_user: User, second_user: User, admin_user: User, test_event: Event
     ):
         create = await client.post(
             "/api/v1/competitions",
             json={"event_id": str(test_event.id), "max_participants": 1},
-            headers=auth_header(test_user),
+            headers=auth_header(admin_user),
         )
         cid = create.json()["id"]
 
@@ -133,39 +133,40 @@ class TestParticipants:
 @pytest.mark.asyncio
 class TestSubmissions:
     async def test_submit_and_grade(
-        self, client: AsyncClient, test_user: User, test_event: Event
+        self, client: AsyncClient, test_user: User, admin_user: User, test_event: Event
     ):
-        headers = auth_header(test_user)
+        admin_headers = auth_header(admin_user)
+        user_headers = auth_header(test_user)
 
-        # Create competition
+        # Create competition (admin)
         comp = await client.post(
             "/api/v1/competitions",
             json={"event_id": str(test_event.id)},
-            headers=headers,
+            headers=admin_headers,
         )
         cid = comp.json()["id"]
 
-        # Register
+        # Register (student)
         await client.post(
             f"/api/v1/competitions/{cid}/participants",
-            headers=headers,
+            headers=user_headers,
         )
 
-        # Submit
+        # Submit (student)
         sub = await client.post(
             f"/api/v1/competitions/{cid}/submissions",
             json={"content": {"code": "print('hello')"}},
-            headers=headers,
+            headers=user_headers,
         )
         assert sub.status_code == 201
         sub_id = sub.json()["id"]
         assert sub.json()["score"] is None
 
-        # Grade
+        # Grade (admin)
         grade = await client.patch(
             f"/api/v1/competitions/{cid}/submissions/{sub_id}/grade",
             json={"score": 95.5},
-            headers=headers,
+            headers=admin_headers,
         )
         assert grade.status_code == 200
         assert float(grade.json()["score"]) == 95.5
@@ -174,19 +175,19 @@ class TestSubmissions:
     async def test_non_participant_cannot_submit(
         self, client: AsyncClient, test_user: User, admin_user: User, test_event: Event
     ):
-        headers = auth_header(test_user)
+        admin_headers = auth_header(admin_user)
 
         comp = await client.post(
             "/api/v1/competitions",
             json={"event_id": str(test_event.id)},
-            headers=headers,
+            headers=admin_headers,
         )
         cid = comp.json()["id"]
 
         resp = await client.post(
             f"/api/v1/competitions/{cid}/submissions",
             json={"content": {}},
-            headers=auth_header(admin_user),  # not registered
+            headers=auth_header(test_user),  # student, not registered
         )
         assert resp.status_code == 403
 
@@ -194,34 +195,35 @@ class TestSubmissions:
 @pytest.mark.asyncio
 class TestScoreboard:
     async def test_generate_and_get_scoreboard(
-        self, client: AsyncClient, test_user: User, test_event: Event
+        self, client: AsyncClient, test_user: User, admin_user: User, test_event: Event
     ):
-        headers = auth_header(test_user)
+        admin_headers = auth_header(admin_user)
+        user_headers = auth_header(test_user)
 
         comp = await client.post(
             "/api/v1/competitions",
             json={"event_id": str(test_event.id)},
-            headers=headers,
+            headers=admin_headers,
         )
         cid = comp.json()["id"]
 
-        # Register + submit + grade
-        await client.post(f"/api/v1/competitions/{cid}/participants", headers=headers)
+        # Register (student) + submit (student) + grade (admin)
+        await client.post(f"/api/v1/competitions/{cid}/participants", headers=user_headers)
         sub = await client.post(
             f"/api/v1/competitions/{cid}/submissions",
             json={"content": {"answer": 42}},
-            headers=headers,
+            headers=user_headers,
         )
         await client.patch(
             f"/api/v1/competitions/{cid}/submissions/{sub.json()['id']}/grade",
             json={"score": 100},
-            headers=headers,
+            headers=admin_headers,
         )
 
-        # Generate scoreboard
+        # Generate scoreboard (admin)
         sb = await client.post(
             f"/api/v1/competitions/{cid}/scoreboard",
-            headers=headers,
+            headers=admin_headers,
         )
         assert sb.status_code == 201
         assert sb.json()["is_final"] is False
@@ -229,10 +231,10 @@ class TestScoreboard:
         assert len(rankings) == 1
         assert rankings[0]["rank"] == 1
 
-        # Get latest scoreboard
+        # Get latest scoreboard (student can read)
         latest = await client.get(
             f"/api/v1/competitions/{cid}/scoreboard",
-            headers=headers,
+            headers=user_headers,
         )
         assert latest.status_code == 200
         assert latest.json()["id"] == sb.json()["id"]

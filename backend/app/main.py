@@ -14,11 +14,19 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+import logging
+
+if not settings.debug and settings.secret_key == "dev-secret-key-change-in-production":
+    logging.warning(
+        "⚠️  Using default SECRET_KEY in non-debug mode! "
+        "Set SECRET_KEY environment variable for production."
+    )
 
 app.include_router(api_router, prefix="/api/v1")
 

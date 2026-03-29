@@ -1,9 +1,29 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.enums import ScheduleType, ScheduleSubtype, ScheduleStatus
+
+_TYPE_SUBTYPE_MAP: dict[ScheduleType, set[ScheduleSubtype]] = {
+    ScheduleType.PROJECT: {
+        ScheduleSubtype.PERSONAL_PROJECT,
+        ScheduleSubtype.TEAM_PROJECT,
+        ScheduleSubtype.TEMP_GROUP_PROJECT,
+    },
+    ScheduleType.INTERVAL: {
+        ScheduleSubtype.REGISTRATION_WINDOW,
+        ScheduleSubtype.EVENT_WINDOW,
+        ScheduleSubtype.SUBMISSION_WINDOW,
+    },
+    ScheduleType.EVENT: {
+        ScheduleSubtype.COMPETITION,
+        ScheduleSubtype.PERFORMANCE_TASK,
+        ScheduleSubtype.ASSIGNMENT,
+        ScheduleSubtype.MEETING,
+        ScheduleSubtype.GENERAL_EVENT,
+    },
+}
 
 
 class ScheduleCreate(BaseModel):
@@ -22,6 +42,15 @@ class ScheduleCreate(BaseModel):
     related_event_id: UUID | None = None
     location: str | None = None
     metadata: dict | None = None
+
+    @model_validator(mode="after")
+    def validate_type_subtype(self):
+        allowed = _TYPE_SUBTYPE_MAP.get(self.type, set())
+        if self.subtype not in allowed:
+            raise ValueError(
+                f"subtype '{self.subtype.value}'은(는) type '{self.type.value}'에 사용할 수 없습니다"
+            )
+        return self
 
 
 class ScheduleUpdate(BaseModel):

@@ -9,7 +9,7 @@ from app.auth.deps import get_current_user
 from app.database import get_db
 from app.models.event import Event
 from app.models.competition import SyncJob
-from app.models.enums import SyncState, SyncJobType, SyncJobStatus
+from app.models.enums import SyncState, SyncJobType, SyncJobStatus, UserRole
 from app.models.user import User
 from app.schemas.event import (
     EventCreate, EventUpdate, EventResponse, SyncJobResponse,
@@ -24,6 +24,9 @@ async def create_event(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role not in (UserRole.ADMIN, UserRole.TEACHER):
+        raise HTTPException(status_code=403, detail="관리자 또는 교사만 이벤트를 생성할 수 있습니다")
+
     event = Event(
         event_type=body.event_type,
         title=body.title,
@@ -66,6 +69,9 @@ async def update_event(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role not in (UserRole.ADMIN, UserRole.TEACHER):
+        raise HTTPException(status_code=403, detail="관리자 또는 교사만 이벤트를 수정할 수 있습니다")
+
     event = await db.get(Event, event_id)
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")

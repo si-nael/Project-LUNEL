@@ -13,6 +13,8 @@ from app.models.enums import ScheduleType, ScheduleSubtype, ScheduleStatus
 from app.schemas.schedule import ScheduleCreate, ScheduleResponse, ScheduleUpdate
 from app.services.importance import calculate_urgency_weight, recalculate_importance
 from app.services.visibility import can_user_access
+from app.services.history import record_schedule_change, _schedule_to_dict
+from app.models.enums import ScheduleType, ScheduleSubtype, ScheduleStatus, ChangeType
 
 router = APIRouter()
 
@@ -49,6 +51,9 @@ async def create_schedule(
     db.add(schedule)
     await db.flush()
     await db.refresh(schedule)
+
+    await record_schedule_change(db, schedule, current_user.id, ChangeType.CREATE)
+
     return schedule
 
 
@@ -130,6 +135,8 @@ async def update_schedule(
     if schedule.creator_id != current_user.id and current_user.role.value not in ("ADMIN", "TEACHER"):
         raise HTTPException(status_code=403, detail="Not authorized to edit")
 
+    previous_data = _schedule_to_dict(schedule)
+
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         if field == "metadata":
@@ -140,6 +147,11 @@ async def update_schedule(
     await recalculate_importance(db, schedule)
     await db.flush()
     await db.refresh(schedule)
+
+    await record_schedule_change(
+        db, schedule, current_user.id, ChangeType.UPDATE, previous_data=previous_data,
+    )
+
     return schedule
 
 
@@ -155,5 +167,8 @@ async def delete_schedule(
 
     if schedule.creator_id != current_user.id and current_user.role.value not in ("ADMIN", "TEACHER"):
         raise HTTPException(status_code=403, detail="Not authorized to delete")
+
+    await record_schedule_change(db, schedule, current_user.id, ChangeType.DELETE,
+                                 previous_data=_schedule_to_dict(schedule))
 
     await db.delete(schedule)

@@ -209,6 +209,29 @@ async def create_edge(
     return edge
 
 
+@router.delete(
+    "/projects/{project_id}/edges/{edge_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_edge(
+    project_id: UUID,
+    edge_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    edge = await db.get(ActivityEdge, edge_id)
+    if edge is None:
+        raise HTTPException(status_code=404, detail="Edge not found")
+
+    # Verify edge belongs to this project
+    from_node = await db.get(ActivityNode, edge.from_node_id)
+    if from_node is None or from_node.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Edge not found in this project")
+
+    await db.delete(edge)
+    await db.flush()
+
+
 async def _recalc_parent_progress(db: AsyncSession, node: ActivityNode):
     """Recalculate progress up the tree after a child node changes."""
     if node.parent_id is None:

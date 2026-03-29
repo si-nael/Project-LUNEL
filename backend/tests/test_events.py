@@ -12,11 +12,11 @@ from tests.conftest import auth_header
 
 @pytest.mark.asyncio
 class TestEvents:
-    async def test_create_event(self, client: AsyncClient, test_user: User):
+    async def test_create_event(self, client: AsyncClient, admin_user: User):
         resp = await client.post(
             "/api/v1/events",
             json={"event_type": "COMPETITION", "title": "Math Olympiad"},
-            headers=auth_header(test_user),
+            headers=auth_header(admin_user),
         )
         assert resp.status_code == 201
         data = resp.json()
@@ -25,8 +25,8 @@ class TestEvents:
         assert data["status"] == "PLANNED"
         assert data["result_sync_state"] == "NOT_SYNCED"
 
-    async def test_list_events(self, client: AsyncClient, test_user: User):
-        headers = auth_header(test_user)
+    async def test_list_events(self, client: AsyncClient, admin_user: User):
+        headers = auth_header(admin_user)
         await client.post(
             "/api/v1/events",
             json={"event_type": "WORKSHOP", "title": "Workshop 1"},
@@ -42,8 +42,8 @@ class TestEvents:
         assert resp.status_code == 200
         assert len(resp.json()) >= 2
 
-    async def test_get_event(self, client: AsyncClient, test_user: User):
-        headers = auth_header(test_user)
+    async def test_get_event(self, client: AsyncClient, admin_user: User):
+        headers = auth_header(admin_user)
         create = await client.post(
             "/api/v1/events",
             json={"event_type": "EXHIBITION", "title": "Art Show"},
@@ -63,8 +63,8 @@ class TestEvents:
         )
         assert resp.status_code == 404
 
-    async def test_update_event(self, client: AsyncClient, test_user: User):
-        headers = auth_header(test_user)
+    async def test_update_event(self, client: AsyncClient, admin_user: User):
+        headers = auth_header(admin_user)
         create = await client.post(
             "/api/v1/events",
             json={"event_type": "COMPETITION", "title": "Original"},
@@ -84,8 +84,8 @@ class TestEvents:
 
 @pytest.mark.asyncio
 class TestSyncJobs:
-    async def test_sync_event(self, client: AsyncClient, test_user: User):
-        headers = auth_header(test_user)
+    async def test_sync_event(self, client: AsyncClient, admin_user: User):
+        headers = auth_header(admin_user)
         event = await client.post(
             "/api/v1/events",
             json={"event_type": "COMPETITION", "title": "Sync Test"},
@@ -107,8 +107,8 @@ class TestSyncJobs:
         ev = await client.get(f"/api/v1/events/{eid}", headers=headers)
         assert ev.json()["result_sync_state"] == "SYNCED"
 
-    async def test_list_sync_jobs(self, client: AsyncClient, test_user: User):
-        headers = auth_header(test_user)
+    async def test_list_sync_jobs(self, client: AsyncClient, admin_user: User):
+        headers = auth_header(admin_user)
         event = await client.post(
             "/api/v1/events",
             json={"event_type": "COMPETITION", "title": "Jobs Test"},
