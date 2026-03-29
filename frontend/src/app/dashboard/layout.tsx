@@ -13,6 +13,9 @@ const NAV_ITEMS = [
     { href: "/dashboard/groups", label: "그룹", icon: "👥" },
     { href: "/dashboard/notifications", label: "알림", icon: "🔔" },
     { href: "/dashboard/competitions", label: "대회", icon: "🏆" },
+    { href: "/dashboard/dag", label: "DAG", icon: "🔀" },
+    { href: "/dashboard/history", label: "변경이력", icon: "📜" },
+    { href: "/dashboard/analysis", label: "분석", icon: "📊" },
     { href: "/dashboard/admin", label: "운영", icon: "⚙️" },
 ];
 

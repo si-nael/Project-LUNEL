@@ -143,3 +143,18 @@ class SyncJobStatus(str, enum.Enum):
     RUNNING = "RUNNING"
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
+
+
+# Phase 3 enums
+
+class ChangeType(str, enum.Enum):
+    CREATE = "CREATE"
+    UPDATE = "UPDATE"
+    DELETE = "DELETE"
+
+
+class ChallengeStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    VERIFIED = "VERIFIED"
+    FAILED = "FAILED"
+    EXPIRED = "EXPIRED"

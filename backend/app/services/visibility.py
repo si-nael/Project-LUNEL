@@ -65,7 +65,7 @@ async def can_user_access(
             return user_in_allowed_group and role_ok
 
     if scope == VisibilityScopeType.PROCEDURAL_KEY:
-        # v1: placeholder — will be implemented in Phase 3
-        return False
+        from app.services.procedural_key import has_verified_challenge
+        return await has_verified_challenge(db, policy_id, user.id)
 
     return False

@@ -91,5 +91,49 @@
 - [ ] 공식 일정 데이터 입력 주체
 - [ ] 결과 연동 대상 시스템 API 스펙
 - [ ] 평가 공개 범위
-- [ ] DAG 편집 UI 제공 여부 (Phase 3)
-- [ ] 절차적 키 제품 투입 시점
+
+## 2026-03-30: Phase 3 — 루넬다움 확장 구현 완료
+
+### 3.1 DAG 완전 지원
+- 서비스: dag.py — DFS 사이클 감지 (has_cycle, would_create_cycle), 위상 정렬 (Kahn's algorithm), 레이어 그룹핑 (DAG 시각화용)
+- API 3개 추가: GET /projects/{id}/dag-order, /dag-layers, /dag-check
+- 엣지 생성 시 DEPENDS_ON/BLOCKS 타입에 자동 사이클 감지 검증
+- 프론트엔드: /dashboard/dag — 프로젝트 선택 → 레이어 뷰 시각화 + 사이클 상태 표시
+
+### 3.2 과거 시점 조회 (Event Sourcing)
+- 모델: ScheduleHistory, ProjectHistory (+ ChangeType enum: CREATE/UPDATE/DELETE)
+- 서비스: history.py — record_schedule_change, record_project_change, get_schedule_at, get_project_at
+- API 4개: GET /schedules/{id}/history, /schedules/{id}/at?timestamp=, /projects/{id}/history, /projects/{id}/at?timestamp=
+- 프론트엔드: /dashboard/history — 일정/프로젝트 선택 → 변경 이력 타임라인 (이전/이후 diff 뷰)
+
+### 3.3 기댓값 예측
+- 서비스: expected_value.py — 선택지별 기댓값/분산/표준편차 계산, 추천 전략 생성
+- API 1개: POST /analysis/expected-value (ADMIN/TEACHER 전용)
+- 확률 합 검증 (≈1.0)
+- 프론트엔드: /dashboard/analysis — 선택지/결과 입력 UI → 기댓값 분석 결과 테이블 + 추천
+
+### 3.4 절차적 키 & 챌린지 시스템
+- 모델: Challenge (+ ChallengeStatus enum: PENDING/VERIFIED/FAILED/EXPIRED)
+- 서비스: procedural_key.py — challenge-response 인증 엔진 (수학 챌린지, 텍스트 챌린지, 패스프레이즈)
+- API 2개: POST /challenges (챌린지 요청), POST /challenges/{id}/verify (응답 검증)
+- 시도 횟수 제한 (max_attempts), 만료 시간 (TTL) 지원
+- VisibilityPolicy PROCEDURAL_KEY 스코프 통합: 검증 완료 시 접근 허용
+- visibility.py 업데이트: PROCEDURAL_KEY → has_verified_challenge 연동
+
+### 마이그레이션
+- Alembic 003: schedule_history, project_history, challenges 테이블 생성
+- 총 21개 테이블
+
+### 테스트 현황
+- 총 109개 테스트 전부 통과 (기존 87 + Phase 3 22개)
+  - test_phase3: 22 (DAG 7 + History 6 + Expected Value 4 + Procedural Key 5)
+
+### 프론트엔드
+- 총 18페이지 빌드 성공
+- 신규 3페이지: dag, history, analysis
+- 사이드바 네비게이션 11항목: 홈, 캘린더, 일정, 프로젝트, 그룹, 알림, 대회, DAG, 변경이력, 분석, 운영
+
+### 전체 엔드포인트: 47개
+- Phase 1: 17개
+- Phase 2: 20개
+- Phase 3: 10개 (DAG 3, History 4, Analysis 1, Challenges 2)

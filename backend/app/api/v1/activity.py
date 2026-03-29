@@ -13,6 +13,7 @@ from app.schemas.activity import (
     ActivityNodeCreate, ActivityNodeUpdate, ActivityNodeResponse,
     ActivityEdgeCreate, ActivityEdgeResponse,
 )
+from app.schemas.dag import DAGOrderResponse, DAGLayerResponse, CycleCheckResponse
 
 router = APIRouter()
 
@@ -188,6 +189,15 @@ async def create_edge(
     if data.from_node_id == data.to_node_id:
         raise HTTPException(status_code=400, detail="Self-loops not allowed")
 
+    # Cycle detection for dependency edges
+    if data.edge_type in ("DEPENDS_ON", "BLOCKS"):
+        from app.services.dag import would_create_cycle
+        if await would_create_cycle(db, project_id, data.from_node_id, data.to_node_id):
+            raise HTTPException(
+                status_code=400,
+                detail="이 엣지를 추가하면 순환이 발생합니다.",
+            )
+
     edge = ActivityEdge(
         from_node_id=data.from_node_id,
         to_node_id=data.to_node_id,
@@ -226,3 +236,71 @@ async def _recalc_parent_progress(db: AsyncSession, node: ActivityNode):
         if children:
             parent.progress = sum(c.progress for c in children) // len(children)
         await _recalc_parent_progress(db, parent)
+
+
+# --- DAG endpoints ---
+
+
+@router.get(
+    "/projects/{project_id}/dag-order",
+    response_model=DAGOrderResponse,
+)
+async def get_dag_order(
+    project_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get nodes in topological order for DAG visualization."""
+    project = await db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    from app.services.dag import topological_sort
+    try:
+        ordered = await topological_sort(db, project_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return DAGOrderResponse(project_id=project_id, ordered_node_ids=ordered)
+
+
+@router.get(
+    "/projects/{project_id}/dag-layers",
+    response_model=DAGLayerResponse,
+)
+async def get_dag_layers_endpoint(
+    project_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get nodes grouped into layers for DAG visualization."""
+    project = await db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    from app.services.dag import get_dag_layers
+    try:
+        layers = await get_dag_layers(db, project_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return DAGLayerResponse(project_id=project_id, layers=layers)
+
+
+@router.get(
+    "/projects/{project_id}/dag-check",
+    response_model=CycleCheckResponse,
+)
+async def check_dag_cycle(
+    project_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Check if project's activity graph contains cycles."""
+    project = await db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    from app.services.dag import has_cycle
+    cycle = await has_cycle(db, project_id)
+    return CycleCheckResponse(project_id=project_id, has_cycle=cycle)

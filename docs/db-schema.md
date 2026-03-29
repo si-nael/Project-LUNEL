@@ -251,5 +251,43 @@
 ---
 
 ## Phase 3 Tables
-### schedule_history, project_history
-(Event sourcing / audit trail tables)
+### schedule_history
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PK |
+| schedule_id | UUID | FK → schedules.id, NOT NULL |
+| changed_by | UUID | FK → users.id, NOT NULL |
+| change_type | change_type_enum | NOT NULL |
+| previous_data | JSON | NULLABLE |
+| new_data | JSON | NULLABLE |
+| changed_at | TIMESTAMPTZ | DEFAULT NOW() |
+
+**Enums**: `change_type_enum` = CREATE, UPDATE, DELETE
+
+### project_history
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PK |
+| project_id | UUID | FK → projects.id, NOT NULL |
+| changed_by | UUID | FK → users.id, NOT NULL |
+| change_type | change_type_enum | NOT NULL |
+| previous_data | JSON | NULLABLE |
+| new_data | JSON | NULLABLE |
+| changed_at | TIMESTAMPTZ | DEFAULT NOW() |
+
+### challenges
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PK |
+| visibility_policy_id | UUID | FK → visibility_policies.id, NOT NULL |
+| user_id | UUID | FK → users.id, NOT NULL |
+| challenge_type | VARCHAR(50) | NOT NULL |
+| challenge_data | JSON | NOT NULL |
+| expected_answer_hash | VARCHAR(255) | NOT NULL |
+| status | challenge_status_enum | DEFAULT 'PENDING' |
+| attempts | INT | DEFAULT 0 |
+| max_attempts | INT | DEFAULT 3 |
+| expires_at | TIMESTAMPTZ | NULLABLE |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() |
+
+**Enums**: `challenge_status_enum` = PENDING, VERIFIED, FAILED, EXPIRED

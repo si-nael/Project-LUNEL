@@ -91,3 +91,29 @@ Base URL: `/api/v1`
 | DELETE | /projects/{id}/nodes/{nid} | 노드 삭제 |
 | GET | /projects/{id}/tree | 트리 순서 조회 |
 | POST | /projects/{id}/edges | 엣지 생성 (의존성/관계) |
+
+## DAG (Phase 3)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /projects/{id}/dag-order | 위상 정렬 순서 |
+| GET | /projects/{id}/dag-layers | DAG 레이어 그룹 (시각화) |
+| GET | /projects/{id}/dag-check | 사이클 존재 여부 확인 |
+
+## History (Phase 3)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /schedules/{id}/history | 일정 변경 이력 |
+| GET | /schedules/{id}/at?timestamp= | 특정 시점 일정 상태 조회 |
+| GET | /projects/{id}/history | 프로젝트 변경 이력 |
+| GET | /projects/{id}/at?timestamp= | 특정 시점 프로젝트 상태 조회 |
+
+## Analysis (Phase 3)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | /analysis/expected-value | 기댓값 분석 (ADMIN/TEACHER 전용) |
+
+## Challenges (Phase 3)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | /challenges | 챌린지 요청 (절차적 키) |
+| POST | /challenges/{id}/verify | 챌린지 응답 검증 |
