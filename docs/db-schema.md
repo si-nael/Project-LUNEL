@@ -177,7 +177,76 @@
 **Constraints**: UNIQUE(from_node_id, to_node_id, edge_type)
 
 ### competitions, participants, submissions, scoreboards, sync_jobs, notifications
-(See detailed-plan.md for full schema)
+
+### competitions
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PK |
+| event_id | UUID | FK → events.id, NOT NULL |
+| max_participants | INT | NULLABLE |
+| scoring_rule | JSON | NULLABLE |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() |
+
+### participants
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PK |
+| competition_id | UUID | FK → competitions.id, NOT NULL |
+| user_id | UUID | FK → users.id, NOT NULL |
+| registered_at | TIMESTAMPTZ | DEFAULT NOW() |
+| status | participant_status_enum | DEFAULT 'REGISTERED' |
+
+**Constraints**: UNIQUE(competition_id, user_id)
+**Enums**: `participant_status_enum` = REGISTERED, CONFIRMED, WITHDRAWN
+
+### submissions
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PK |
+| competition_id | UUID | FK → competitions.id, NOT NULL |
+| participant_id | UUID | FK → participants.id, NOT NULL |
+| content | JSON | NULLABLE |
+| score | NUMERIC | NULLABLE |
+| submitted_at | TIMESTAMPTZ | DEFAULT NOW() |
+| graded_at | TIMESTAMPTZ | NULLABLE |
+
+### scoreboards
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PK |
+| competition_id | UUID | FK → competitions.id, NOT NULL |
+| snapshot_data | JSON | NOT NULL |
+| is_final | BOOLEAN | DEFAULT false |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() |
+
+### sync_jobs
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PK |
+| event_id | UUID | FK → events.id, NOT NULL |
+| job_type | sync_job_type_enum | NOT NULL |
+| status | sync_job_status_enum | DEFAULT 'PENDING' |
+| result_summary | JSON | NULLABLE |
+| started_at | TIMESTAMPTZ | NULLABLE |
+| completed_at | TIMESTAMPTZ | NULLABLE |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() |
+
+**Enums**:
+- `sync_job_type_enum` = MANUAL, POLLING, WEBHOOK
+- `sync_job_status_enum` = PENDING, RUNNING, SUCCESS, FAILED
+
+### notifications
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | PK |
+| user_id | UUID | FK → users.id, NOT NULL |
+| type | VARCHAR(50) | NOT NULL |
+| title | VARCHAR(300) | NOT NULL |
+| body | TEXT | NULLABLE |
+| related_schedule_id | UUID | FK → schedules.id, NULLABLE |
+| related_project_id | UUID | FK → projects.id, NULLABLE |
+| is_read | BOOLEAN | DEFAULT false |
+| created_at | TIMESTAMPTZ | DEFAULT NOW() |
 
 ---
 

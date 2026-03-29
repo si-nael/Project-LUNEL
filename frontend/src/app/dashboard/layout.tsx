@@ -13,6 +13,7 @@ const NAV_ITEMS = [
     { href: "/dashboard/groups", label: "그룹", icon: "👥" },
     { href: "/dashboard/notifications", label: "알림", icon: "🔔" },
     { href: "/dashboard/competitions", label: "대회", icon: "🏆" },
+    { href: "/dashboard/admin", label: "운영", icon: "⚙️" },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

@@ -49,8 +49,24 @@ Base URL: `/api/v1`
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | /events | 이벤트 생성 |
+| GET | /events | 이벤트 목록 |
 | GET | /events/{id} | 이벤트 상세 |
-| POST | /events/{id}/sync | 결과 동기화 |
+| PATCH | /events/{id} | 이벤트 수정 |
+| POST | /events/{id}/sync | 결과 동기화 (SyncJob 생성) |
+| GET | /events/{id}/sync-jobs | 동기화 작업 목록 |
+
+## Competitions (Phase 2)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | /competitions | 대회 생성 (event_id 연결) |
+| GET | /competitions/{id} | 대회 상세 |
+| POST | /competitions/{id}/participants | 참가자 등록 |
+| GET | /competitions/{id}/participants | 참가자 목록 |
+| POST | /competitions/{id}/submissions | 제출물 생성 |
+| GET | /competitions/{id}/submissions | 제출물 목록 |
+| PATCH | /competitions/{id}/submissions/{sid}/grade | 채점 |
+| POST | /competitions/{id}/scoreboard | 순위표 생성 |
+| GET | /competitions/{id}/scoreboard | 최신 순위표 조회 |
 
 ## Visibility Policies
 | Method | Path | Description |
@@ -61,5 +77,17 @@ Base URL: `/api/v1`
 ## Notifications (Phase 2)
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | /notifications | 알림 목록 |
+| GET | /notifications | 알림 목록 (unread_only 필터) |
 | PATCH | /notifications/{id}/read | 읽음 처리 |
+| POST | /notifications/read-all | 전체 읽음 처리 |
+| GET | /notifications/unread-count | 미읽은 알림 수 |
+
+## Activity Nodes (Phase 2)
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /projects/{id}/nodes | 프로젝트 활동 노드 목록 |
+| POST | /projects/{id}/nodes | 활동 노드 생성 |
+| PATCH | /projects/{id}/nodes/{nid} | 노드 수정 (진행률/상태) |
+| DELETE | /projects/{id}/nodes/{nid} | 노드 삭제 |
+| GET | /projects/{id}/tree | 트리 순서 조회 |
+| POST | /projects/{id}/edges | 엣지 생성 (의존성/관계) |

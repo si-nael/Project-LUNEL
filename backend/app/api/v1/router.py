@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     auth, users, groups, schedules, projects, ratings,
-    visibility_policies, activity, notifications, competitions,
+    visibility_policies, activity, notifications, competitions, events,
 )
 
 api_router = APIRouter()
@@ -29,3 +29,4 @@ api_router.include_router(
     prefix="/competitions",
     tags=["competitions"],
 )
+api_router.include_router(events.router, prefix="/events", tags=["events"])
