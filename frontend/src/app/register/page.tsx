@@ -4,6 +4,25 @@ import { useState, FormEvent } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Moon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 export default function RegisterPage() {
     const { register } = useAuth();
@@ -34,78 +53,91 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-                <h1 className="text-2xl font-bold text-center mb-2">Lunel</h1>
-                <p className="text-gray-500 text-center mb-6">회원가입</p>
+        <div className="min-h-screen flex items-center justify-center p-4">
+            <Card className="w-full max-w-sm">
+                <CardHeader className="text-center space-y-2 pb-2">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                        <Moon className="h-4 w-4 text-primary" />
+                        <CardTitle className="text-xl tracking-tight">Lunel</CardTitle>
+                    </div>
+                    <CardDescription>새 계정을 만드세요</CardDescription>
+                </CardHeader>
 
-                {error && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">
-                        {error}
-                    </div>
-                )}
+                <CardContent>
+                    {error && (
+                        <div className="bg-destructive/8 text-destructive px-3 py-2 rounded-lg mb-4 text-xs">
+                            {error}
+                        </div>
+                    )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">이름</label>
-                        <input
-                            type="text"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
-                        <input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
-                        <input
-                            type="password"
-                            required
-                            minLength={8}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="8자 이상"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">역할</label>
-                        <select
-                            value={role}
-                            onChange={(e) => setRole(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="name" className="text-xs text-foreground/60">이름</Label>
+                            <Input
+                                id="name"
+                                type="text"
+                                required
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="email" className="text-xs text-foreground/60">이메일</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="password" className="text-xs text-foreground/60">비밀번호</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                required
+                                minLength={8}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="8자 이상"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-xs text-foreground/60">역할</Label>
+                            <Select value={role} onValueChange={setRole}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="STUDENT">학생</SelectItem>
+                                    <SelectItem value="TEACHER">교사</SelectItem>
+                                    <SelectItem value="EXTERNAL">외부인</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button
+                            type="submit"
+                            disabled={submitting}
+                            className="w-full"
                         >
-                            <option value="STUDENT">학생</option>
-                            <option value="TEACHER">교사</option>
-                            <option value="EXTERNAL">외부인</option>
-                        </select>
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={submitting}
-                        className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                    >
-                        {submitting ? "가입 중..." : "회원가입"}
-                    </button>
-                </form>
+                            {submitting ? "가입 중..." : "회원가입"}
+                        </Button>
+                    </form>
+                </CardContent>
 
-                <p className="text-center text-sm text-gray-500 mt-4">
-                    이미 계정이 있으신가요?{" "}
-                    <Link href="/login" className="text-blue-600 hover:underline">
-                        로그인
-                    </Link>
-                </p>
-            </div>
+                <CardFooter className="justify-center">
+                    <p className="text-xs text-muted-foreground">
+                        이미 계정이 있으신가요?{" "}
+                        <Link
+                            href="/login"
+                            className="text-primary hover:underline font-medium"
+                        >
+                            로그인
+                        </Link>
+                    </p>
+                </CardFooter>
+            </Card>
         </div>
     );
 }

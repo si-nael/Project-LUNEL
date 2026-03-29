@@ -4,6 +4,18 @@ import { useState, FormEvent } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Moon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 
 export default function LoginPage() {
     const { login } = useAuth();
@@ -28,56 +40,68 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-                <h1 className="text-2xl font-bold text-center mb-2">Lunel</h1>
-                <p className="text-gray-500 text-center mb-6">로그인</p>
-
-                {error && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">
-                        {error}
+        <div className="min-h-screen flex items-center justify-center p-4">
+            <Card className="w-full max-w-sm">
+                <CardHeader className="text-center space-y-2 pb-2">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                        <Moon className="h-4 w-4 text-primary" />
+                        <CardTitle className="text-xl tracking-tight">Lunel</CardTitle>
                     </div>
-                )}
+                    <CardDescription>로그인하여 시작하세요</CardDescription>
+                </CardHeader>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
-                        <input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="email@example.com"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
-                        <input
-                            type="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="8자 이상"
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={submitting}
-                        className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                    >
-                        {submitting ? "로그인 중..." : "로그인"}
-                    </button>
-                </form>
+                <CardContent>
+                    {error && (
+                        <div className="bg-destructive/8 text-destructive px-3 py-2 rounded-lg mb-4 text-xs">
+                            {error}
+                        </div>
+                    )}
 
-                <p className="text-center text-sm text-gray-500 mt-4">
-                    계정이 없으신가요?{" "}
-                    <Link href="/register" className="text-blue-600 hover:underline">
-                        회원가입
-                    </Link>
-                </p>
-            </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="email" className="text-xs text-foreground/60">이메일</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="email@example.com"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="password" className="text-xs text-foreground/60">비밀번호</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="8자 이상"
+                            />
+                        </div>
+                        <Button
+                            type="submit"
+                            disabled={submitting}
+                            className="w-full"
+                        >
+                            {submitting ? "로그인 중..." : "로그인"}
+                        </Button>
+                    </form>
+                </CardContent>
+
+                <CardFooter className="justify-center">
+                    <p className="text-xs text-muted-foreground">
+                        계정이 없으신가요?{" "}
+                        <Link
+                            href="/register"
+                            className="text-primary hover:underline font-medium"
+                        >
+                            회원가입
+                        </Link>
+                    </p>
+                </CardFooter>
+            </Card>
         </div>
     );
 }

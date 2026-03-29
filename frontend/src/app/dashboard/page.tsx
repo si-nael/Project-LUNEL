@@ -5,40 +5,62 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { Schedule } from "@/types";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { CalendarClock, AlertTriangle, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 function ImportanceBadge({ score }: { score: number }) {
-    let color = "bg-gray-100 text-gray-600";
-    if (score >= 80) color = "bg-red-100 text-red-700";
-    else if (score >= 60) color = "bg-orange-100 text-orange-700";
-    else if (score >= 40) color = "bg-blue-100 text-blue-700";
-    return (
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${color}`}>
-            {score}
-        </span>
-    );
+    const variant =
+        score >= 80
+            ? "destructive"
+            : score >= 60
+                ? "default"
+                : "secondary";
+    return <Badge variant={variant}>{score}</Badge>;
 }
 
 function ScheduleCard({ schedule }: { schedule: Schedule }) {
-    const startDate = new Date(schedule.start_at);
     const now = new Date();
     const daysLeft = schedule.end_at
-        ? Math.ceil((new Date(schedule.end_at).getTime() - now.getTime()) / 86400000)
+        ? Math.ceil(
+            (new Date(schedule.end_at).getTime() - now.getTime()) / 86400000
+        )
         : null;
 
     return (
         <Link
             href={`/dashboard/schedules/${schedule.id}`}
-            className="block bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow"
+            className="block rounded-xl p-3.5 hover:bg-foreground/[0.02] transition-all duration-200"
         >
-            <div className="flex items-start justify-between mb-2">
-                <h3 className="font-medium text-gray-900 truncate flex-1">{schedule.title}</h3>
+            <div className="flex items-start justify-between mb-1.5">
+                <h3 className="text-sm font-medium text-foreground/80 truncate flex-1 mr-2">
+                    {schedule.title}
+                </h3>
                 <ImportanceBadge score={schedule.importance_score} />
             </div>
-            <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className="px-2 py-0.5 bg-gray-100 rounded">{schedule.type}</span>
-                <span>{startDate.toLocaleDateString("ko-KR")}</span>
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                    {schedule.type}
+                </Badge>
+                <span>
+                    {new Date(schedule.start_at).toLocaleDateString("ko-KR")}
+                </span>
                 {daysLeft !== null && daysLeft > 0 && (
-                    <span className={daysLeft <= 3 ? "text-red-500 font-medium" : ""}>
+                    <span
+                        className={cn(
+                            "font-medium",
+                            daysLeft <= 3
+                                ? "text-destructive"
+                                : "text-muted-foreground"
+                        )}
+                    >
                         D-{daysLeft}
                     </span>
                 )}
@@ -62,10 +84,15 @@ export default function DashboardPage() {
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
 
-    const todaySchedules = schedules.filter((s) => s.start_at.slice(0, 10) === todayStr);
+    const todaySchedules = schedules.filter(
+        (s) => s.start_at.slice(0, 10) === todayStr
+    );
     const urgent = schedules
         .filter((s) => s.end_at && new Date(s.end_at) > now)
-        .sort((a, b) => new Date(a.end_at!).getTime() - new Date(b.end_at!).getTime())
+        .sort(
+            (a, b) =>
+                new Date(a.end_at!).getTime() - new Date(b.end_at!).getTime()
+        )
         .slice(0, 5);
     const important = [...schedules]
         .sort((a, b) => b.importance_score - a.importance_score)
@@ -73,58 +100,100 @@ export default function DashboardPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                안녕하세요, {user?.name}님
-            </h1>
-            <p className="text-gray-500 mb-8">
-                {now.toLocaleDateString("ko-KR", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-            </p>
+            <div className="mb-6">
+                <h1 className="text-xl font-semibold tracking-tight">
+                    안녕하세요, {user?.name}님
+                </h1>
+                <p className="text-xs text-muted-foreground mt-1">
+                    {now.toLocaleDateString("ko-KR", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                    })}
+                </p>
+            </div>
 
             {loading ? (
-                <div className="text-gray-400">일정 불러오는 중...</div>
+                <div className="flex items-center justify-center py-20">
+                    <div className="h-5 w-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Today */}
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-800 mb-3">오늘 일정</h2>
-                        {todaySchedules.length === 0 ? (
-                            <p className="text-gray-400 text-sm">오늘 일정이 없습니다.</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {todaySchedules.map((s) => (
-                                    <ScheduleCard key={s.id} schedule={s} />
-                                ))}
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <div className="flex items-center gap-2">
+                                <CalendarClock className="h-3.5 w-3.5 text-primary/60" />
+                                <CardTitle className="text-sm">
+                                    오늘 일정
+                                </CardTitle>
                             </div>
-                        )}
-                    </div>
+                            <CardDescription className="text-xs">
+                                {todaySchedules.length}개의 일정
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {todaySchedules.length === 0 ? (
+                                <p className="text-sm text-muted-foreground py-4 text-center">
+                                    오늘 일정이 없습니다.
+                                </p>
+                            ) : (
+                                todaySchedules.map((s) => (
+                                    <ScheduleCard key={s.id} schedule={s} />
+                                ))
+                            )}
+                        </CardContent>
+                    </Card>
 
-                    {/* Urgent */}
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-800 mb-3">마감 임박</h2>
-                        {urgent.length === 0 ? (
-                            <p className="text-gray-400 text-sm">마감 임박 일정이 없습니다.</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {urgent.map((s) => (
-                                    <ScheduleCard key={s.id} schedule={s} />
-                                ))}
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <div className="flex items-center gap-2">
+                                <AlertTriangle className="h-3.5 w-3.5 text-destructive/60" />
+                                <CardTitle className="text-sm">
+                                    마감 임박
+                                </CardTitle>
                             </div>
-                        )}
-                    </div>
+                            <CardDescription className="text-xs">
+                                마감이 가까운 일정
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {urgent.length === 0 ? (
+                                <p className="text-sm text-muted-foreground py-4 text-center">
+                                    마감 임박 일정이 없습니다.
+                                </p>
+                            ) : (
+                                urgent.map((s) => (
+                                    <ScheduleCard key={s.id} schedule={s} />
+                                ))
+                            )}
+                        </CardContent>
+                    </Card>
 
-                    {/* Important */}
-                    <div>
-                        <h2 className="text-lg font-semibold text-gray-800 mb-3">중요 일정</h2>
-                        {important.length === 0 ? (
-                            <p className="text-gray-400 text-sm">일정이 없습니다.</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {important.map((s) => (
-                                    <ScheduleCard key={s.id} schedule={s} />
-                                ))}
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <div className="flex items-center gap-2">
+                                <Star className="h-3.5 w-3.5 text-amber-500/60" />
+                                <CardTitle className="text-sm">
+                                    중요 일정
+                                </CardTitle>
                             </div>
-                        )}
-                    </div>
+                            <CardDescription className="text-xs">
+                                중요도 높은 일정 Top 5
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {important.length === 0 ? (
+                                <p className="text-sm text-muted-foreground py-4 text-center">
+                                    일정이 없습니다.
+                                </p>
+                            ) : (
+                                important.map((s) => (
+                                    <ScheduleCard key={s.id} schedule={s} />
+                                ))
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             )}
         </div>

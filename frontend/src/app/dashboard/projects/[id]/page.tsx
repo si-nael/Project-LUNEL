@@ -13,10 +13,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-    PENDING: "bg-gray-100 text-gray-600",
-    IN_PROGRESS: "bg-blue-100 text-blue-700",
-    DONE: "bg-green-100 text-green-700",
-    BLOCKED: "bg-red-100 text-red-700",
+    PENDING: "bg-foreground/[0.06] text-foreground/60",
+    IN_PROGRESS: "bg-blue-500/10 text-blue-600",
+    DONE: "bg-emerald-500/10 text-emerald-600",
+    BLOCKED: "bg-red-500/10 text-red-600",
 };
 
 const NODE_ICONS: Record<string, string> = {
@@ -85,34 +85,34 @@ export default function ProjectDetailPage() {
 
     const renderNode = (node: ActivityNode, depth: number = 0) => (
         <div key={node.id} style={{ marginLeft: depth * 24 }}>
-            <div className="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-gray-50 group">
+            <div className="flex items-center gap-2 py-2 px-3 rounded-xl hover:bg-foreground/[0.02] group transition-all">
                 <span className="text-sm">
                     {NODE_ICONS[node.node_type] || "📌"}
                 </span>
-                <span className="text-sm font-medium text-gray-900 flex-1">
+                <span className="text-sm font-medium text-foreground flex-1">
                     {node.title}
                 </span>
                 <span
-                    className={`text-xs px-2 py-0.5 rounded ${STATUS_COLORS[node.status] || ""
+                    className={`text-[11px] px-2 py-0.5 rounded-full ${STATUS_COLORS[node.status] || ""
                         }`}
                 >
                     {STATUS_LABELS[node.status] || node.status}
                 </span>
                 <div className="flex items-center gap-1">
-                    <div className="w-16 bg-gray-100 rounded-full h-1.5">
+                    <div className="w-16 bg-foreground/[0.04] rounded-full h-1.5">
                         <div
-                            className="bg-blue-500 h-1.5 rounded-full transition-all"
+                            className="bg-primary/70 h-1.5 rounded-full transition-all"
                             style={{ width: `${node.progress}%` }}
                         />
                     </div>
-                    <span className="text-xs text-gray-400 w-8 text-right">
+                    <span className="text-[11px] text-foreground/40 w-8 text-right">
                         {node.progress}%
                     </span>
                 </div>
                 {node.status !== "DONE" && (
                     <button
                         onClick={() => markDone(node.id)}
-                        className="opacity-0 group-hover:opacity-100 text-xs text-green-600 hover:text-green-700 transition-opacity"
+                        className="opacity-0 group-hover:opacity-100 text-xs text-emerald-600 hover:text-emerald-700 transition-opacity"
                     >
                         완료
                     </button>
@@ -124,31 +124,36 @@ export default function ProjectDetailPage() {
         </div>
     );
 
-    if (loading) return <p className="text-gray-400">로딩 중...</p>;
-    if (!project) return <p className="text-red-500">프로젝트를 찾을 수 없습니다.</p>;
+    if (loading)
+        return (
+            <div className="flex justify-center py-20">
+                <div className="h-5 w-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+            </div>
+        );
+    if (!project) return <p className="text-destructive text-sm">프로젝트를 찾을 수 없습니다.</p>;
 
     return (
         <div>
             <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-xl font-semibold tracking-tight">
                     {project.title}
                 </h1>
                 {project.description && (
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                         {project.description}
                     </p>
                 )}
                 <div className="flex items-center gap-4 mt-3">
                     <div className="flex items-center gap-2">
-                        <div className="w-32 bg-gray-100 rounded-full h-2">
+                        <div className="w-32 bg-foreground/[0.04] rounded-full h-1.5">
                             <div
-                                className="bg-blue-500 h-2 rounded-full transition-all"
+                                className="bg-primary/70 h-1.5 rounded-full transition-all"
                                 style={{
                                     width: `${project.progress_percent}%`,
                                 }}
                             />
                         </div>
-                        <span className="text-sm font-medium text-gray-600">
+                        <span className="text-xs font-medium text-foreground/60">
                             {project.progress_percent}%
                         </span>
                     </div>
@@ -156,7 +161,7 @@ export default function ProjectDetailPage() {
             </div>
 
             {/* Add node form */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+            <div className="glass rounded-2xl p-4 mb-4">
                 <div className="flex gap-2">
                     <select
                         value={newType}
@@ -168,7 +173,7 @@ export default function ProjectDetailPage() {
                                 | "SUB_TASK"
                             )
                         }
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-2"
+                        className="text-sm border border-border/60 bg-transparent rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-ring/40"
                     >
                         <option value="MILESTONE">🎯 마일스톤</option>
                         <option value="TASK">📌 태스크</option>
@@ -179,14 +184,14 @@ export default function ProjectDetailPage() {
                         value={newTitle}
                         onChange={(e) => setNewTitle(e.target.value)}
                         placeholder="새 노드 이름"
-                        className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2"
+                        className="flex-1 text-sm border border-border/60 bg-transparent rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-ring/40"
                         onKeyDown={(e) =>
                             e.key === "Enter" && addNode()
                         }
                     />
                     <button
                         onClick={addNode}
-                        className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        className="text-sm px-4 py-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all"
                     >
                         추가
                     </button>
@@ -194,9 +199,9 @@ export default function ProjectDetailPage() {
             </div>
 
             {/* Task tree */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="glass rounded-2xl p-4">
                 {nodes.length === 0 ? (
-                    <p className="text-sm text-gray-400 text-center py-8">
+                    <p className="text-xs text-foreground/40 text-center py-8">
                         아직 작업 노드가 없습니다. 위에서 추가해 보세요.
                     </p>
                 ) : (

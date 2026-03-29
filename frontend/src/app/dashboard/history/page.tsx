@@ -42,9 +42,10 @@ export default function HistoryPage() {
     const loadHistory = async (id: string) => {
         setLoading(true);
         try {
-            const endpoint = mode === "schedule"
-                ? `/api/v1/schedules/${id}/history`
-                : `/api/v1/projects/${id}/history`;
+            const endpoint =
+                mode === "schedule"
+                    ? `/api/v1/schedules/${id}/history`
+                    : `/api/v1/projects/${id}/history`;
             const res = await api.get(endpoint);
             setHistory(res.data);
         } catch {
@@ -59,28 +60,42 @@ export default function HistoryPage() {
     };
 
     const changeTypeColors: Record<string, string> = {
-        CREATE: "bg-green-100 text-green-800",
-        UPDATE: "bg-yellow-100 text-yellow-800",
-        DELETE: "bg-red-100 text-red-800",
+        CREATE: "bg-emerald-500/10 text-emerald-600",
+        UPDATE: "bg-amber-500/10 text-amber-600",
+        DELETE: "bg-destructive/10 text-destructive",
     };
 
     const items = mode === "schedule" ? schedules : projects;
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">변경 이력</h1>
+            <h1 className="text-xl font-semibold tracking-tight mb-6">변경 이력</h1>
 
             <div className="flex gap-4 mb-6">
-                <div className="flex rounded-lg overflow-hidden border border-gray-300">
+                <div className="flex rounded-xl overflow-hidden border border-border/60">
                     <button
-                        onClick={() => { setMode("schedule"); setSelectedId(""); setHistory([]); }}
-                        className={`px-4 py-2 text-sm ${mode === "schedule" ? "bg-blue-600 text-white" : "bg-white text-gray-700"}`}
+                        onClick={() => {
+                            setMode("schedule");
+                            setSelectedId("");
+                            setHistory([]);
+                        }}
+                        className={`px-4 py-1.5 text-xs transition-all ${mode === "schedule"
+                                ? "bg-primary text-primary-foreground"
+                                : "text-foreground/60 hover:text-foreground"
+                            }`}
                     >
                         일정
                     </button>
                     <button
-                        onClick={() => { setMode("project"); setSelectedId(""); setHistory([]); }}
-                        className={`px-4 py-2 text-sm ${mode === "project" ? "bg-blue-600 text-white" : "bg-white text-gray-700"}`}
+                        onClick={() => {
+                            setMode("project");
+                            setSelectedId("");
+                            setHistory([]);
+                        }}
+                        className={`px-4 py-1.5 text-xs transition-all ${mode === "project"
+                                ? "bg-primary text-primary-foreground"
+                                : "text-foreground/60 hover:text-foreground"
+                            }`}
                     >
                         프로젝트
                     </button>
@@ -89,42 +104,60 @@ export default function HistoryPage() {
                 <select
                     value={selectedId}
                     onChange={(e) => handleSelect(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-4 py-2 text-sm flex-1"
+                    className="border border-border/60 bg-transparent rounded-xl px-4 py-1.5 text-xs flex-1 focus:outline-none focus:ring-1 focus:ring-ring/40"
                 >
-                    <option value="">{mode === "schedule" ? "일정" : "프로젝트"} 선택...</option>
+                    <option value="">
+                        {mode === "schedule" ? "일정" : "프로젝트"} 선택...
+                    </option>
                     {items.map((item) => (
-                        <option key={item.id} value={item.id}>{item.title}</option>
+                        <option key={item.id} value={item.id}>
+                            {item.title}
+                        </option>
                     ))}
                 </select>
             </div>
 
-            {loading && <p className="text-gray-500">로딩 중...</p>}
+            {loading && (
+                <div className="flex justify-center py-10">
+                    <div className="h-5 w-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                </div>
+            )}
 
             {history.length > 0 && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                     {history.map((entry) => (
-                        <div key={entry.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                        <div
+                            key={entry.id}
+                            className="glass rounded-2xl p-4"
+                        >
                             <div className="flex items-center gap-3 mb-3">
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${changeTypeColors[entry.change_type] || "bg-gray-100"}`}>
+                                <span
+                                    className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${changeTypeColors[entry.change_type] || "bg-foreground/[0.04]"
+                                        }`}
+                                >
                                     {entry.change_type}
                                 </span>
-                                <span className="text-sm text-gray-500">
+                                <span className="text-xs text-muted-foreground">
                                     {new Date(entry.changed_at).toLocaleString("ko-KR")}
                                 </span>
                             </div>
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 {entry.previous_data && (
                                     <div>
-                                        <h4 className="font-medium text-gray-500 mb-1">이전</h4>
-                                        <pre className="bg-red-50 p-2 rounded text-xs overflow-auto max-h-40">
+                                        <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                                            이전
+                                        </h4>
+                                        <pre className="bg-destructive/5 p-2 rounded-lg text-[11px] overflow-auto max-h-40">
                                             {JSON.stringify(entry.previous_data, null, 2)}
                                         </pre>
                                     </div>
                                 )}
                                 {entry.new_data && (
                                     <div>
-                                        <h4 className="font-medium text-gray-500 mb-1">이후</h4>
-                                        <pre className="bg-green-50 p-2 rounded text-xs overflow-auto max-h-40">
+                                        <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                                            이후
+                                        </h4>
+                                        <pre className="bg-emerald-500/5 p-2 rounded-lg text-[11px] overflow-auto max-h-40">
                                             {JSON.stringify(entry.new_data, null, 2)}
                                         </pre>
                                     </div>
@@ -136,7 +169,9 @@ export default function HistoryPage() {
             )}
 
             {selectedId && !loading && history.length === 0 && (
-                <p className="text-gray-500">변경 이력이 없습니다.</p>
+                <p className="text-sm text-muted-foreground text-center py-10">
+                    변경 이력이 없습니다.
+                </p>
             )}
         </div>
     );

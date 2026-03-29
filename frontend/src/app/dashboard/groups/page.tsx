@@ -19,7 +19,6 @@ export default function GroupsPage() {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
 
-    // Form
     const [name, setName] = useState("");
     const [type, setType] = useState("CLUB");
     const [isTemporary, setIsTemporary] = useState(false);
@@ -54,42 +53,51 @@ export default function GroupsPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">그룹</h1>
+                <h1 className="text-xl font-semibold tracking-tight">그룹</h1>
                 <button
                     onClick={() => setShowForm(!showForm)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                    className="text-xs px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
                 >
                     {showForm ? "취소" : "+ 새 그룹"}
                 </button>
             </div>
 
             {showForm && (
-                <form onSubmit={handleCreate} className="bg-white rounded-xl border p-6 mb-6 space-y-4">
+                <form
+                    onSubmit={handleCreate}
+                    className="glass rounded-2xl p-5 mb-6 space-y-4"
+                >
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">그룹명</label>
+                        <label className="block text-xs text-foreground/60 mb-1">
+                            그룹명
+                        </label>
                         <input
                             type="text"
                             required
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full border border-border/60 bg-transparent rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring/40"
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">타입</label>
+                            <label className="block text-xs text-foreground/60 mb-1">
+                                유형
+                            </label>
                             <select
                                 value={type}
                                 onChange={(e) => setType(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                                className="w-full border border-border/60 bg-transparent rounded-xl px-3 py-2 text-sm"
                             >
                                 {Object.entries(TYPE_LABELS).map(([v, l]) => (
-                                    <option key={v} value={v}>{l}</option>
+                                    <option key={v} value={v}>
+                                        {l}
+                                    </option>
                                 ))}
                             </select>
                         </div>
                         <div className="flex items-end">
-                            <label className="flex items-center gap-2 text-sm pb-2">
+                            <label className="flex items-center gap-2 text-xs pb-2">
                                 <input
                                     type="checkbox"
                                     checked={isTemporary}
@@ -103,7 +111,7 @@ export default function GroupsPage() {
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                        className="text-xs px-5 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-all"
                     >
                         생성
                     </button>
@@ -111,28 +119,37 @@ export default function GroupsPage() {
             )}
 
             {loading ? (
-                <p className="text-gray-400">로딩 중...</p>
+                <div className="flex justify-center py-20">
+                    <div className="h-5 w-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                </div>
             ) : groups.length === 0 ? (
-                <p className="text-gray-400">그룹이 없습니다.</p>
+                <p className="text-sm text-muted-foreground text-center py-20">
+                    그룹이 없습니다.
+                </p>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {groups.map((g) => (
-                        <div key={g.id} className="bg-white rounded-xl border border-gray-200 p-5">
+                        <div key={g.id} className="glass rounded-2xl p-5">
                             <div className="flex items-start justify-between mb-3">
-                                <h3 className="font-semibold text-gray-900">{g.name}</h3>
+                                <h3 className="text-sm font-semibold text-foreground">
+                                    {g.name}
+                                </h3>
                                 {g.is_temporary && (
-                                    <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded">임시</span>
+                                    <span className="text-[10px] px-2 py-0.5 bg-amber-500/10 text-amber-600 rounded-full">
+                                        임시
+                                    </span>
                                 )}
                             </div>
-                            <div className="flex items-center gap-3 text-sm text-gray-500">
-                                <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="px-2 py-0.5 bg-foreground/[0.04] rounded-full text-[11px]">
                                     {TYPE_LABELS[g.type] || g.type}
                                 </span>
-                                <span>👥 {g.member_count}명</span>
+                                <span>멤버 {g.member_count}명</span>
                             </div>
                             {g.expires_at && (
-                                <div className="text-xs text-red-500 mt-2">
-                                    만료: {new Date(g.expires_at).toLocaleDateString("ko-KR")}
+                                <div className="text-[11px] text-destructive mt-2">
+                                    만료:{" "}
+                                    {new Date(g.expires_at).toLocaleDateString("ko-KR")}
                                 </div>
                             )}
                         </div>

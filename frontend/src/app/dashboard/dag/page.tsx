@@ -9,11 +9,6 @@ interface Project {
     title: string;
 }
 
-interface DAGOrder {
-    project_id: string;
-    ordered_node_ids: string[];
-}
-
 interface DAGLayers {
     project_id: string;
     layers: string[][];
@@ -59,7 +54,7 @@ export default function DAGPage() {
             setLayers(layersRes?.data || null);
             setCycleCheck(cycleRes.data);
         } catch {
-            setError("DAG 데이터를 불러오는 중 오류가 발생했습니다.");
+            setError("DAG 데이터를 불러오는 데 오류가 발생했습니다.");
         }
         setLoading(false);
     };
@@ -70,46 +65,61 @@ export default function DAGPage() {
     };
 
     const statusColors: Record<string, string> = {
-        TODO: "bg-gray-100 text-gray-700",
-        IN_PROGRESS: "bg-blue-100 text-blue-700",
-        DONE: "bg-green-100 text-green-700",
-        BLOCKED: "bg-red-100 text-red-700",
+        TODO: "bg-foreground/[0.04] text-foreground/70",
+        IN_PROGRESS: "bg-primary/8 text-primary",
+        DONE: "bg-emerald-500/8 text-emerald-600",
+        BLOCKED: "bg-destructive/8 text-destructive",
     };
 
     const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
     return (
         <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">DAG 시각화</h1>
+            <h1 className="text-xl font-semibold tracking-tight mb-6">
+                DAG 시각화
+            </h1>
 
             <div className="mb-6">
                 <select
                     value={selectedProject}
                     onChange={(e) => handleProjectSelect(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-4 py-2 text-sm"
+                    className="border border-border/60 bg-transparent rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring/40"
                 >
                     <option value="">프로젝트 선택...</option>
                     {projects.map((p) => (
-                        <option key={p.id} value={p.id}>{p.title}</option>
+                        <option key={p.id} value={p.id}>
+                            {p.title}
+                        </option>
                     ))}
                 </select>
             </div>
 
-            {loading && <p className="text-gray-500">로딩 중...</p>}
-            {error && <p className="text-red-500">{error}</p>}
+            {loading && (
+                <div className="flex justify-center py-10">
+                    <div className="h-5 w-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                </div>
+            )}
+            {error && <p className="text-destructive text-xs mb-4">{error}</p>}
 
             {cycleCheck && (
-                <div className={`mb-4 p-3 rounded-lg text-sm ${cycleCheck.has_cycle ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"}`}>
-                    {cycleCheck.has_cycle ? "⚠️ 순환 감지됨 — DAG가 아닙니다." : "✅ 순환 없음 — 유효한 DAG입니다."}
+                <div
+                    className={`mb-4 p-3 rounded-xl text-xs ${cycleCheck.has_cycle
+                            ? "bg-destructive/8 text-destructive"
+                            : "bg-emerald-500/5 text-emerald-600"
+                        }`}
+                >
+                    {cycleCheck.has_cycle
+                        ? "순환 감지됨 — DAG가 아닙니다."
+                        : "순환 없음 — 유효한 DAG입니다."}
                 </div>
             )}
 
             {layers && layers.layers.length > 0 && (
                 <div className="space-y-4">
-                    <h2 className="text-lg font-semibold text-gray-800">레이어 뷰</h2>
+                    <h2 className="text-sm font-semibold text-foreground">레이어별</h2>
                     {layers.layers.map((layer, idx) => (
                         <div key={idx} className="flex items-start gap-4">
-                            <div className="w-20 text-sm text-gray-500 font-medium pt-2">
+                            <div className="w-16 text-xs text-muted-foreground font-medium pt-2">
                                 Layer {idx}
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -118,10 +128,14 @@ export default function DAGPage() {
                                     return (
                                         <div
                                             key={nodeId}
-                                            className={`px-3 py-2 rounded-lg border text-sm ${statusColors[node?.status || "TODO"] || "bg-gray-50"}`}
+                                            className={`px-3 py-2 rounded-xl text-xs ${statusColors[node?.status || "TODO"] ||
+                                                "bg-foreground/[0.04]"
+                                                }`}
                                         >
-                                            <div className="font-medium">{node?.title || nodeId.slice(0, 8)}</div>
-                                            <div className="text-xs mt-1 opacity-75">
+                                            <div className="font-medium">
+                                                {node?.title || nodeId.slice(0, 8)}
+                                            </div>
+                                            <div className="text-[10px] mt-0.5 opacity-60">
                                                 {node?.node_type} · {node?.progress}%
                                             </div>
                                         </div>
@@ -134,7 +148,9 @@ export default function DAGPage() {
             )}
 
             {selectedProject && !loading && nodes.length === 0 && (
-                <p className="text-gray-500">이 프로젝트에 노드가 없습니다.</p>
+                <p className="text-sm text-muted-foreground text-center py-10">
+                    이 프로젝트에 노드가 없습니다.
+                </p>
             )}
         </div>
     );

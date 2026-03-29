@@ -39,10 +39,10 @@ export default function NotificationsPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-xl font-semibold tracking-tight">
                     알림
                     {unreadCount > 0 && (
-                        <span className="ml-2 text-sm bg-red-500 text-white rounded-full px-2 py-0.5">
+                        <span className="ml-2 text-xs bg-destructive/10 text-destructive rounded-full px-2 py-0.5">
                             {unreadCount}
                         </span>
                     )}
@@ -50,14 +50,14 @@ export default function NotificationsPage() {
                 <div className="flex gap-2">
                     <button
                         onClick={() => setFilter(filter === "all" ? "unread" : "all")}
-                        className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50"
+                        className="text-xs px-3 py-1.5 rounded-xl border border-border/60 hover:bg-foreground/[0.03] transition-all"
                     >
                         {filter === "all" ? "읽지 않은 것만" : "전체 보기"}
                     </button>
                     {unreadCount > 0 && (
                         <button
                             onClick={markAllRead}
-                            className="text-sm px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                            className="text-xs px-3 py-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
                         >
                             모두 읽음
                         </button>
@@ -66,38 +66,40 @@ export default function NotificationsPage() {
             </div>
 
             {loading ? (
-                <p className="text-gray-400">로딩 중...</p>
+                <div className="flex justify-center py-20">
+                    <div className="h-5 w-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                </div>
             ) : notifications.length === 0 ? (
-                <p className="text-gray-400">알림이 없습니다.</p>
+                <p className="text-sm text-muted-foreground text-center py-20">알림이 없습니다.</p>
             ) : (
                 <div className="space-y-2">
                     {notifications.map((n) => (
                         <div
                             key={n.id}
-                            className={`bg-white rounded-xl border p-4 flex items-start gap-3 cursor-pointer transition-colors ${n.is_read
-                                    ? "border-gray-200"
-                                    : "border-blue-300 bg-blue-50/40"
+                            className={`glass rounded-2xl p-4 flex items-start gap-3 cursor-pointer transition-all duration-200 ${n.is_read
+                                    ? ""
+                                    : "ring-1 ring-primary/20"
                                 }`}
                             onClick={() => !n.is_read && markRead(n.id)}
                         >
                             <div
-                                className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${n.is_read ? "bg-gray-300" : "bg-blue-500"
+                                className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${n.is_read ? "bg-foreground/15" : "bg-primary/60"
                                     }`}
                             />
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900">
+                                <p className="text-sm font-medium text-foreground">
                                     {n.title}
                                 </p>
                                 {n.body && (
-                                    <p className="text-sm text-gray-500 mt-0.5">
+                                    <p className="text-xs text-muted-foreground mt-0.5">
                                         {n.body}
                                     </p>
                                 )}
-                                <p className="text-xs text-gray-400 mt-1">
+                                <p className="text-[11px] text-muted-foreground/60 mt-1">
                                     {new Date(n.created_at).toLocaleString("ko-KR")}
                                 </p>
                             </div>
-                            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded flex-shrink-0">
+                            <span className="text-[10px] bg-foreground/[0.04] text-muted-foreground px-2 py-0.5 rounded-full flex-shrink-0">
                                 {n.type}
                             </span>
                         </div>

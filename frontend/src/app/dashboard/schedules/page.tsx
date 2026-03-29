@@ -4,6 +4,17 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Schedule } from "@/types";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Plus } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 const STATUS_LABELS: Record<string, string> = {
     DRAFT: "초안",
@@ -22,13 +33,13 @@ const TYPE_LABELS: Record<string, string> = {
 export default function SchedulesPage() {
     const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filterType, setFilterType] = useState("");
-    const [filterStatus, setFilterStatus] = useState("");
+    const [filterType, setFilterType] = useState("__all__");
+    const [filterStatus, setFilterStatus] = useState("__all__");
 
     useEffect(() => {
         const params = new URLSearchParams();
-        if (filterType) params.set("type", filterType);
-        if (filterStatus) params.set("status", filterStatus);
+        if (filterType && filterType !== "__all__") params.set("type", filterType);
+        if (filterStatus && filterStatus !== "__all__") params.set("status", filterStatus);
         api.get<Schedule[]>(`/schedules?${params}`)
             .then(({ data }) => setSchedules(data))
             .catch(() => { })
@@ -38,76 +49,89 @@ export default function SchedulesPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">일정 목록</h1>
-                <Link
-                    href="/dashboard/schedules/new"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                >
-                    + 새 일정
-                </Link>
+                <h1 className="text-xl font-semibold tracking-tight">일정 목록</h1>
+                <Button asChild>
+                    <Link href="/dashboard/schedules/new">
+                        <Plus className="h-4 w-4 mr-2" />
+                        새 일정
+                    </Link>
+                </Button>
             </div>
 
             <div className="flex gap-3 mb-4">
-                <select
-                    value={filterType}
-                    onChange={(e) => setFilterType(e.target.value)}
-                    className="text-sm border border-gray-300 rounded-lg px-3 py-1.5"
-                >
-                    <option value="">전체 타입</option>
-                    <option value="PROJECT">프로젝트</option>
-                    <option value="INTERVAL">인터벌</option>
-                    <option value="EVENT">이벤트</option>
-                </select>
-                <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="text-sm border border-gray-300 rounded-lg px-3 py-1.5"
-                >
-                    <option value="">전체 상태</option>
-                    <option value="SCHEDULED">예정</option>
-                    <option value="IN_PROGRESS">진행 중</option>
-                    <option value="COMPLETED">완료</option>
-                    <option value="CANCELLED">취소</option>
-                </select>
+                <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger className="w-36">
+                        <SelectValue placeholder="전체 타입" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="__all__">전체 타입</SelectItem>
+                        <SelectItem value="PROJECT">프로젝트</SelectItem>
+                        <SelectItem value="INTERVAL">인터벌</SelectItem>
+                        <SelectItem value="EVENT">이벤트</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="w-36">
+                        <SelectValue placeholder="전체 상태" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="__all__">전체 상태</SelectItem>
+                        <SelectItem value="SCHEDULED">예정</SelectItem>
+                        <SelectItem value="IN_PROGRESS">진행 중</SelectItem>
+                        <SelectItem value="COMPLETED">완료</SelectItem>
+                        <SelectItem value="CANCELLED">취소</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             {loading ? (
-                <p className="text-gray-400">로딩 중...</p>
+                <div className="flex justify-center py-20">
+                    <div className="h-5 w-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                </div>
             ) : schedules.length === 0 ? (
-                <p className="text-gray-400">일정이 없습니다.</p>
+                <p className="text-muted-foreground text-center py-20">일정이 없습니다.</p>
             ) : (
-                <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+                <Card className="divide-y">
                     {schedules.map((s) => (
                         <Link
                             key={s.id}
                             href={`/dashboard/schedules/${s.id}`}
-                            className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                            className="flex items-center justify-between p-4 hover:bg-foreground/[0.02] transition-all duration-200"
                         >
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="font-medium text-gray-900 truncate">{s.title}</h3>
-                                    <span className="text-xs px-2 py-0.5 bg-gray-100 rounded text-gray-600">
+                                    <h3 className="font-medium truncate">{s.title}</h3>
+                                    <Badge variant="outline" className="text-[10px]">
                                         {TYPE_LABELS[s.type] || s.type}
-                                    </span>
-                                    <span className="text-xs px-2 py-0.5 bg-gray-100 rounded text-gray-600">
+                                    </Badge>
+                                    <Badge variant="secondary" className="text-[10px]">
                                         {STATUS_LABELS[s.status] || s.status}
-                                    </span>
+                                    </Badge>
                                 </div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-muted-foreground">
                                     {new Date(s.start_at).toLocaleString("ko-KR")}
                                     {s.end_at && ` ~ ${new Date(s.end_at).toLocaleString("ko-KR")}`}
                                     {s.location && ` · ${s.location}`}
                                 </div>
                             </div>
                             <div className="ml-4 text-right">
-                                <div className={`text-lg font-bold ${s.importance_score >= 80 ? "text-red-600" : s.importance_score >= 60 ? "text-orange-600" : "text-blue-600"}`}>
+                                <Badge
+                                    variant={
+                                        s.importance_score >= 80
+                                            ? "destructive"
+                                            : s.importance_score >= 60
+                                                ? "default"
+                                                : "secondary"
+                                    }
+                                    className="text-base px-3"
+                                >
                                     {s.importance_score}
-                                </div>
-                                <div className="text-[10px] text-gray-400">중요도</div>
+                                </Badge>
+                                <div className="text-[10px] text-muted-foreground mt-1">중요도</div>
                             </div>
                         </Link>
                     ))}
-                </div>
+                </Card>
             )}
         </div>
     );
