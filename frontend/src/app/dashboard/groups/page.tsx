@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
 
 const TYPE_LABELS: Record<string, string> = {
     SCHOOL: "학교",
@@ -135,30 +136,32 @@ export default function GroupsPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {groups.map((g) => (
-                        <div key={g.id} className="glass rounded-2xl p-5">
-                            <div className="flex items-start justify-between mb-3">
-                                <h3 className="text-sm font-semibold text-foreground">
-                                    {g.name}
-                                </h3>
-                                {g.is_temporary && (
-                                    <span className="text-[10px] px-2 py-0.5 bg-amber-500/10 text-amber-600 rounded-full">
-                                        임시
+                        <Link key={g.id} href={`/dashboard/groups/${g.id}`} className="block">
+                            <div className="glass rounded-2xl p-5 hover:bg-foreground/[0.02] transition-all cursor-pointer">
+                                <div className="flex items-start justify-between mb-3">
+                                    <h3 className="text-sm font-semibold text-foreground">
+                                        {g.name}
+                                    </h3>
+                                    {g.is_temporary && (
+                                        <span className="text-[10px] px-2 py-0.5 bg-amber-500/10 text-amber-600 rounded-full">
+                                            임시
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                    <span className="px-2 py-0.5 bg-foreground/[0.04] rounded-full text-[11px]">
+                                        {TYPE_LABELS[g.type] || g.type}
                                     </span>
+                                    <span>멤버 {g.member_count}명</span>
+                                </div>
+                                {g.expires_at && (
+                                    <div className="text-[11px] text-destructive mt-2">
+                                        만료:{" "}
+                                        {new Date(g.expires_at).toLocaleDateString("ko-KR")}
+                                    </div>
                                 )}
                             </div>
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                <span className="px-2 py-0.5 bg-foreground/[0.04] rounded-full text-[11px]">
-                                    {TYPE_LABELS[g.type] || g.type}
-                                </span>
-                                <span>멤버 {g.member_count}명</span>
-                            </div>
-                            {g.expires_at && (
-                                <div className="text-[11px] text-destructive mt-2">
-                                    만료:{" "}
-                                    {new Date(g.expires_at).toLocaleDateString("ko-KR")}
-                                </div>
-                            )}
-                        </div>
+                        </Link>
                     ))}
                 </div>
             )}

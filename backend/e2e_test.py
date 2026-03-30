@@ -3,6 +3,7 @@ E2E Integration Test - Backend API against real PostgreSQL
 Tests the full flow: register → login → create group → create schedule → rate → verify
 """
 import asyncio
+import uuid
 import httpx
 
 BASE = "http://localhost:8000/api/v1"
@@ -10,6 +11,10 @@ BASE = "http://localhost:8000/api/v1"
 
 async def main():
     async with httpx.AsyncClient(base_url=BASE, timeout=10) as c:
+        run_id = uuid.uuid4().hex[:8]
+        user_email = f"test_{run_id}@lunel.dev"
+        rater_email = f"rater_{run_id}@lunel.dev"
+
         print("=" * 60)
         print("LUNEL E2E INTEGRATION TEST")
         print("=" * 60)
@@ -21,19 +26,19 @@ async def main():
 
         # 2. Register user
         r = await c.post("/auth/register", json={
-            "email": "test@lunel.dev",
+            "email": user_email,
             "password": "Test1234!",
             "name": "테스트유저",
             "role": "STUDENT",
         })
         assert r.status_code == 201, f"Register failed: {r.text}"
         user = r.json()
-        assert user["email"] == "test@lunel.dev"
+        assert user["email"] == user_email
         print(f"[PASS] 2. Register user: {user['name']} ({user['id'][:8]}...)")
 
         # 3. Login
         r = await c.post("/auth/login", json={
-            "email": "test@lunel.dev",
+            "email": user_email,
             "password": "Test1234!",
         })
         assert r.status_code == 200, f"Login failed: {r.text}"
@@ -48,7 +53,7 @@ async def main():
         r = await c.get("/users/me", headers=headers)
         assert r.status_code == 200, f"Get me failed: {r.text}"
         me = r.json()
-        assert me["email"] == "test@lunel.dev"
+        assert me["email"] == user_email
         user_id = me["id"]
         print(f"[PASS] 4. Get /users/me: {me['name']}")
 
@@ -107,14 +112,14 @@ async def main():
 
         # 11. Register another user for rating
         r = await c.post("/auth/register", json={
-            "email": "rater@lunel.dev",
+            "email": rater_email,
             "password": "Rate1234!",
             "name": "평가자",
             "role": "TEACHER",
         })
         assert r.status_code == 201
         r = await c.post("/auth/login", json={
-            "email": "rater@lunel.dev",
+            "email": rater_email,
             "password": "Rate1234!",
         })
         rater_tokens = r.json()
