@@ -23,6 +23,9 @@ class Group(Base):
     owner_user_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("users.id"), nullable=False
     )
+    visibility_policy_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("visibility_policies.id"), nullable=True
+    )
     is_temporary: Mapped[bool] = mapped_column(Boolean, default=False)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

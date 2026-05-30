@@ -88,12 +88,10 @@ export default function AnalysisPage() {
             });
             setResult(res.data);
         } catch (err: unknown) {
-            const axiosErr = err as {
-                response?: { data?: { detail?: string } };
-            };
-            setError(
-                axiosErr.response?.data?.detail || "분석 오류가 발생했습니다."
-            );
+            const axiosErr = err as { response?: { data?: { detail?: any } } };
+            const detail = axiosErr.response?.data?.detail;
+            const msg = Array.isArray(detail) ? detail[0]?.msg : detail;
+            setError(typeof msg === "string" ? msg : "분석 오류가 발생했습니다.");
         }
         setLoading(false);
     };

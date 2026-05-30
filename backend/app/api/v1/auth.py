@@ -19,7 +19,10 @@ from app.schemas.user import (
     UserCreate,
     UserLogin,
     UserResponse,
+    LogoutRequest,
 )
+from fastapi.security import HTTPAuthorizationCredentials
+from app.auth.deps import security_scheme
 
 router = APIRouter()
 
@@ -78,6 +81,15 @@ async def refresh_token(data: TokenRefresh, db: AsyncSession = Depends(get_db)):
             detail="Invalid refresh token",
         )
 
+    # Check Redis Blocklist
+    from app.redis import redis_client
+    is_blocked = await redis_client.get(f"blocklist:{data.refresh_token}")
+    if is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been logged out",
+        )
+
     user_id = payload.get("sub")
     result = await db.execute(select(User).where(User.id == PyUUID(user_id)))
     user = result.scalar_one_or_none()
@@ -92,3 +104,29 @@ async def refresh_token(data: TokenRefresh, db: AsyncSession = Depends(get_db)):
         access_token=create_access_token(user.id, user.role.value),
         refresh_token=create_refresh_token(user.id),
     )
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    data: LogoutRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security_scheme)
+):
+    from app.redis import redis_client
+    from datetime import datetime, timezone
+    
+    # Block access token
+    access_payload = decode_token(credentials.credentials)
+    if access_payload and "exp" in access_payload:
+        exp = datetime.fromtimestamp(access_payload["exp"], tz=timezone.utc)
+        ttl = int((exp - datetime.now(timezone.utc)).total_seconds())
+        if ttl > 0:
+            await redis_client.setex(f"blocklist:{credentials.credentials}", ttl, "1")
+            
+    # Block refresh token
+    if data.refresh_token:
+        refresh_payload = decode_token(data.refresh_token)
+        if refresh_payload and "exp" in refresh_payload:
+            exp = datetime.fromtimestamp(refresh_payload["exp"], tz=timezone.utc)
+            ttl = int((exp - datetime.now(timezone.utc)).total_seconds())
+            if ttl > 0:
+                await redis_client.setex(f"blocklist:{data.refresh_token}", ttl, "1")

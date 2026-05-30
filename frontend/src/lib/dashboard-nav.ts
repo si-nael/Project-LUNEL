@@ -12,6 +12,7 @@ import {
     Settings,
     Trophy,
     Users,
+    Terminal,
 } from "lucide-react";
 
 export interface DashboardNavItem {
@@ -27,6 +28,7 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     { href: "/dashboard/schedules", label: "일정", icon: ListTodo },
     { href: "/dashboard/projects", label: "프로젝트", icon: FolderKanban },
     { href: "/dashboard/groups", label: "그룹", icon: Users },
+    { href: "/dashboard/secret-groups", label: "비밀 결사대", icon: Terminal },
     { href: "/dashboard/notifications", label: "알림", icon: Bell },
     { href: "/dashboard/competitions", label: "대회", icon: Trophy },
     { href: "/dashboard/dag", label: "DAG", icon: GitBranch },

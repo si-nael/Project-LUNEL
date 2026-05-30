@@ -23,6 +23,15 @@ async def get_current_user(
             detail="Invalid or expired token",
         )
 
+    # Check Redis Blocklist
+    from app.redis import redis_client
+    is_blocked = await redis_client.get(f"blocklist:{credentials.credentials}")
+    if is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been logged out",
+        )
+
     user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(

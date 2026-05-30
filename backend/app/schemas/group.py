@@ -11,6 +11,7 @@ class GroupCreate(BaseModel):
     type: GroupType
     is_temporary: bool = False
     expires_at: datetime | None = None
+    visibility_policy_id: UUID | None = None
 
 
 class GroupResponse(BaseModel):
@@ -22,6 +23,7 @@ class GroupResponse(BaseModel):
     expires_at: datetime | None
     is_active: bool
     created_at: datetime
+    visibility_policy_id: UUID | None
     member_count: int = 0
 
     model_config = {"from_attributes": True}

@@ -194,11 +194,10 @@ export default function ScheduleDetailPage() {
             const sRes = await api.get<Schedule>(`/schedules/${scheduleId}`);
             setSchedule(sRes.data);
         } catch (err: unknown) {
-            const msg =
-                err && typeof err === "object" && "response" in err
-                    ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
-                    : undefined;
-            setRatingError(msg || "평가 제출에 실패했습니다.");
+            const axiosErr = err as { response?: { data?: { detail?: any } } };
+            const detail = axiosErr.response?.data?.detail;
+            const msg = Array.isArray(detail) ? detail[0]?.msg : detail;
+            setRatingError(typeof msg === "string" ? msg : "평가 제출에 실패했습니다.");
         }
     };
 

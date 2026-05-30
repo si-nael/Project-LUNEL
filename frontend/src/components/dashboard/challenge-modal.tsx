@@ -33,6 +33,7 @@ interface ChallengeModalProps {
     policyId: string;
     onSuccess: () => void;
     targetTitle?: string;
+    theme?: "default" | "cyberpunk";
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -67,6 +68,7 @@ export default function ChallengeModal({
     policyId,
     onSuccess,
     targetTitle,
+    theme = "default",
 }: ChallengeModalProps) {
     const [phase, setPhase] = useState<ModalPhase>("loading");
     const [challenge, setChallenge] = useState<Challenge | null>(null);
@@ -164,7 +166,9 @@ export default function ChallengeModal({
             const err = error as { response?: { status?: number; data?: { detail?: string } } };
             const status = err.response?.status;
 
-            if (status === 410 || err.response?.data?.detail?.includes("expired")) {
+            const detail = err.response?.data?.detail;
+            const isExpired = typeof detail === "string" && detail.includes("expired");
+            if (status === 410 || isExpired) {
                 setPhase("expired");
                 toast.error("챌린지 시간이 만료되었습니다.");
             } else {
@@ -176,9 +180,9 @@ export default function ChallengeModal({
                         setPhase("failed");
                         toast.error("최대 시도 횟수를 초과했습니다.");
                     } else {
-                        toast.error(
-                            err.response?.data?.detail ?? "답이 틀렸습니다. 다시 시도하세요."
-                        );
+                        const detail = err.response?.data?.detail;
+                        const msg = Array.isArray(detail) ? detail[0]?.msg : detail;
+                        toast.error(typeof msg === "string" ? msg : "답이 틀렸습니다. 다시 시도하세요.");
                     }
                     return updated;
                 });
@@ -208,22 +212,42 @@ export default function ChallengeModal({
 
     const isTimeLow = remainingSeconds > 0 && remainingSeconds <= 30;
 
-    // ── Render ───────────────────────────────────────────────
+    const isCyberpunk = theme === "cyberpunk";
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md p-0 overflow-hidden">
+            <DialogContent className={cn(
+                "max-w-md p-0 overflow-hidden",
+                isCyberpunk ? "bg-zinc-950/95 border border-green-500/30 text-green-400 font-mono shadow-[0_0_30px_rgba(34,197,94,0.15)]" : ""
+            )}>
                 {/* ── Header ──────────────────────────────── */}
-                <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/50">
+                <DialogHeader className={cn(
+                    "px-6 pt-6 pb-4 border-b",
+                    isCyberpunk ? "border-green-500/30" : "border-border/50"
+                )}>
                     <div className="flex items-center gap-2.5 mb-2">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-                            <Shield className="h-4.5 w-4.5 text-primary" />
+                        <div className={cn(
+                            "flex h-9 w-9 items-center justify-center rounded-xl",
+                            isCyberpunk ? "bg-green-500/10" : "bg-primary/10"
+                        )}>
+                            <Shield className={cn(
+                                "h-4.5 w-4.5",
+                                isCyberpunk ? "text-green-400" : "text-primary"
+                            )} />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <DialogTitle className="text-sm">접근 인증 챌린지</DialogTitle>
-                            <DialogDescription className="text-xs truncate">
+                            <DialogTitle className={cn(
+                                "text-sm",
+                                isCyberpunk && "uppercase tracking-widest"
+                            )}>
+                                {isCyberpunk ? "SYSTEM_ACCESS_PROTOCOL" : "접근 인증 챌린지"}
+                            </DialogTitle>
+                            <DialogDescription className={cn(
+                                "text-xs truncate",
+                                isCyberpunk && "text-green-500/70 uppercase"
+                            )}>
                                 {targetTitle
-                                    ? `"${targetTitle}" 접근 권한 확인`
+                                    ? `TARGET: ${targetTitle}`
                                     : "보호된 콘텐츠에 접근하려면 챌린지를 풀어야 합니다."}
                             </DialogDescription>
                         </div>
@@ -268,7 +292,12 @@ export default function ChallengeModal({
                             </div>
 
                             {/* Question */}
-                            <div className="rounded-xl bg-foreground/[0.03] border border-border/40 p-4">
+                            <div className={cn(
+                                "rounded-xl p-4 border",
+                                isCyberpunk 
+                                    ? "bg-green-950/20 border-green-500/30 text-green-300" 
+                                    : "bg-foreground/[0.03] border-border/40"
+                            )}>
                                 <p className="text-sm font-medium leading-relaxed whitespace-pre-wrap">
                                     {challenge.challenge_data.question}
                                 </p>
@@ -300,21 +329,27 @@ export default function ChallengeModal({
                                         value={answer}
                                         onChange={(e) => setAnswer(e.target.value)}
                                         onKeyDown={handleKeyDown}
-                                        placeholder="정답을 입력하세요"
-                                        className="h-11 text-sm"
+                                        placeholder={isCyberpunk ? "> INPUT_VALUE..." : "정답을 입력하세요"}
+                                        className={cn(
+                                            "h-11 text-sm",
+                                            isCyberpunk && "bg-black/50 border-green-500/30 focus-visible:ring-green-500/50 text-green-400 placeholder:text-green-700 font-mono"
+                                        )}
                                         disabled={submitting}
                                     />
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <span className="text-[11px] text-muted-foreground">
+                                    <span className={cn(
+                                        "text-[11px]",
+                                        isCyberpunk ? "text-green-600 uppercase" : "text-muted-foreground"
+                                    )}>
                                         남은 시도:{" "}
                                         <span
                                             className={cn(
                                                 "font-semibold",
                                                 remainingAttempts <= 1
                                                     ? "text-destructive"
-                                                    : "text-foreground"
+                                                    : isCyberpunk ? "text-green-400" : "text-foreground"
                                             )}
                                         >
                                             {remainingAttempts}
@@ -326,7 +361,10 @@ export default function ChallengeModal({
                                         onClick={handleSubmit}
                                         disabled={!answer.trim() || submitting}
                                         size="sm"
-                                        className="min-w-[80px]"
+                                        className={cn(
+                                            "min-w-[80px]",
+                                            isCyberpunk && "bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/50"
+                                        )}
                                     >
                                         {submitting ? (
                                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -404,10 +442,13 @@ export default function ChallengeModal({
                 </div>
 
                 {/* ── Footer ─────────────────────────────── */}
-                <div className="flex items-center justify-between border-t border-border/50 px-6 py-3 text-[11px] text-muted-foreground">
+                <div className={cn(
+                    "flex items-center justify-between border-t px-6 py-3 text-[11px]",
+                    isCyberpunk ? "border-green-500/30 text-green-600" : "border-border/50 text-muted-foreground"
+                )}>
                     <div className="flex items-center gap-1.5">
                         <Lock className="h-3 w-3" />
-                        <span>Procedural Key 인증</span>
+                        <span>{isCyberpunk ? "SECURE_CONNECTION_ESTABLISHED" : "Procedural Key 인증"}</span>
                     </div>
                     {phase === "challenge" && (
                         <span>Enter 키로 제출</span>

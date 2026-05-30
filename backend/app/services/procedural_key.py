@@ -16,16 +16,26 @@ from app.models.enums import ChallengeStatus
 from app.models.visibility import VisibilityPolicy
 
 
+import hmac
+
+from app.config import get_settings
+
+settings = get_settings()
+
 def _hash_answer(answer: str) -> str:
-    return hashlib.sha256(answer.strip().lower().encode()).hexdigest()
+    # Use HMAC with server secret key as pepper to prevent rainbow table attacks
+    return hmac.new(
+        settings.secret_key.encode(),
+        answer.strip().lower().encode(),
+        hashlib.sha256
+    ).hexdigest()
 
 
 def _generate_math_challenge() -> tuple[dict, str]:
     """Generate a simple math challenge."""
-    import random
-    a = random.randint(10, 99)
-    b = random.randint(10, 99)
-    op = random.choice(["+", "-", "*"])
+    a = secrets.randbelow(90) + 10  # 10 to 99
+    b = secrets.randbelow(90) + 10
+    op = secrets.choice(["+", "-", "*"])
     if op == "+":
         answer = a + b
     elif op == "-":
@@ -89,7 +99,12 @@ async def verify_challenge(
     db: AsyncSession, challenge_id: UUID, answer: str
 ) -> tuple[bool, str]:
     """Verify a challenge response. Returns (success, message)."""
-    challenge = await db.get(Challenge, challenge_id)
+    # Use row-level locking to prevent race conditions during verification
+    result = await db.execute(
+        select(Challenge).where(Challenge.id == challenge_id).with_for_update()
+    )
+    challenge = result.scalar_one_or_none()
+    
     if challenge is None:
         return False, "챌린지를 찾을 수 없습니다."
 
@@ -107,7 +122,9 @@ async def verify_challenge(
 
     challenge.attempts += 1
 
-    if _hash_answer(answer) == challenge.expected_answer_hash:
+    # Constant-time comparison to prevent timing attacks
+    hashed_input = _hash_answer(answer)
+    if hmac.compare_digest(hashed_input, challenge.expected_answer_hash):
         challenge.status = ChallengeStatus.VERIFIED
         await db.flush()
         return True, "인증 성공"

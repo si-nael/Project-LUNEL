@@ -28,6 +28,7 @@ export default function GroupsPage() {
     const [name, setName] = useState("");
     const [type, setType] = useState("CLUB");
     const [isTemporary, setIsTemporary] = useState(false);
+    const [isSecret, setIsSecret] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     const fetchGroups = () => {
@@ -45,10 +46,31 @@ export default function GroupsPage() {
         e.preventDefault();
         setSubmitting(true);
         try {
-            await api.post("/groups", { name, type, is_temporary: isTemporary });
+            let visibilityPolicyId = undefined;
+            if (isSecret) {
+                // 비밀 결사대 생성을 위한 VisibilityPolicy 생성
+                const { data: policy } = await api.post("/visibility-policies", {
+                    scope_type: "PROCEDURAL_KEY",
+                    allow_public: false,
+                });
+                visibilityPolicyId = policy.id;
+            }
+
+            await api.post("/groups", { 
+                name, 
+                type, 
+                is_temporary: isTemporary,
+                visibility_policy_id: visibilityPolicyId
+            });
             setShowForm(false);
             setName("");
+            setIsSecret(false);
             fetchGroups();
+            if (isSecret) {
+                toast.success("비밀 결사대가 생성되었습니다! 좌측 메뉴에서 확인하세요.");
+            } else {
+                toast.success("일반 그룹이 생성되었습니다.");
+            }
         } catch {
             toast.error("그룹 생성에 실패했습니다.");
         } finally {
@@ -103,8 +125,8 @@ export default function GroupsPage() {
                                 ))}
                             </select>
                         </div>
-                        <div className="flex items-end">
-                            <label className="flex items-center gap-2 text-xs pb-2">
+                        <div className="flex flex-col gap-2 items-start justify-end">
+                            <label className="flex items-center gap-2 text-xs">
                                 <input
                                     type="checkbox"
                                     checked={isTemporary}
@@ -112,6 +134,15 @@ export default function GroupsPage() {
                                     className="rounded"
                                 />
                                 임시 그룹
+                            </label>
+                            <label className="flex items-center gap-2 text-xs font-semibold text-green-500">
+                                <input
+                                    type="checkbox"
+                                    checked={isSecret}
+                                    onChange={(e) => setIsSecret(e.target.checked)}
+                                    className="rounded accent-green-500"
+                                />
+                                비밀 결사대 (CTF 방어벽 적용)
                             </label>
                         </div>
                     </div>
