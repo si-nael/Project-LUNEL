@@ -178,6 +178,7 @@ export default function CommandPalette({
                         schedule.status,
                         schedule.subtype,
                         schedule.location ?? "",
+                        ...(schedule.visibility_policy_id ? ["챌린지", "보안", "인증", "challenge"] : []),
                     ],
                 })),
         [schedules]
@@ -197,7 +198,12 @@ export default function CommandPalette({
                     description: `${project.status} · 진행률 ${project.progress_percent}%`,
                     href: `/dashboard/projects/${project.id}`,
                     icon: FolderKanban,
-                    keywords: [project.title, project.status, project.description ?? ""],
+                    keywords: [
+                        project.title, 
+                        project.status, 
+                        project.description ?? "",
+                        ...(project.visibility_policy_id ? ["챌린지", "보안", "인증", "challenge"] : []),
+                    ],
                 })),
         [projects]
     );

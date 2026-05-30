@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
+import VisibilityEditor from "@/components/dashboard/visibility-editor";
 
 const STATUS_LABELS: Record<string, string> = {
     DRAFT: "초안",
@@ -29,6 +30,7 @@ export default function ProjectsPage() {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [groupId, setGroupId] = useState("");
+    const [policyId, setPolicyId] = useState<string | null>(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -55,11 +57,13 @@ export default function ProjectsPage() {
                 title,
                 description: description || undefined,
                 owner_group_id: groupId,
+                visibility_policy_id: policyId || null,
             });
             setProjects((prev) => [data, ...prev]);
             setShowCreate(false);
             setTitle("");
             setDescription("");
+            setPolicyId(null);
             toast.success("프로젝트가 생성되었습니다.");
             router.push(`/dashboard/projects/${data.id}`);
         } catch {
@@ -121,6 +125,14 @@ export default function ProjectsPage() {
                                     ))}
                                 </select>
                             )}
+                        </div>
+                        <div className="pt-2 border-t border-border/40">
+                            <Label className="text-xs mb-2 block">접근 정책 (선택)</Label>
+                            <VisibilityEditor
+                                value={policyId}
+                                onChange={setPolicyId}
+                                targetType="project"
+                            />
                         </div>
                         <Button onClick={handleCreate} disabled={creating} size="sm">
                             {creating ? "생성 중..." : "프로젝트 생성"}

@@ -39,6 +39,27 @@ async def list_nodes(
     return result.scalars().all()
 
 
+@router.get(
+    "/projects/{project_id}/edges",
+    response_model=list[ActivityEdgeResponse],
+)
+async def list_edges(
+    project_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    project = await db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    result = await db.execute(
+        select(ActivityEdge)
+        .join(ActivityNode, ActivityEdge.from_node_id == ActivityNode.id)
+        .where(ActivityNode.project_id == project_id)
+    )
+    return result.scalars().all()
+
+
 @router.post(
     "/projects/{project_id}/nodes",
     response_model=ActivityNodeResponse,

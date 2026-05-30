@@ -1,17 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { api } from "@/lib/api";
+import { ActivityNode, ActivityEdge as ApiActivityEdge } from "@/types";
+import {
+    ReactFlow,
+    Controls,
+    Background,
+    useNodesState,
+    useEdgesState,
+    Edge,
+    Node,
+    MarkerType,
+    Panel
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import dagre from "dagre";
+import { DagNode } from "@/components/dashboard/dag-node";
+import { AlertTriangle, GitBranch, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Project {
     id: string;
     title: string;
-}
-
-interface DAGLayers {
-    project_id: string;
-    layers: string[][];
 }
 
 interface CycleCheck {
@@ -19,23 +30,48 @@ interface CycleCheck {
     has_cycle: boolean;
 }
 
-interface ActivityNode {
-    id: string;
-    title: string;
-    status: string;
-    node_type: string;
-    progress: number;
-}
+const nodeTypes = {
+    activity: DagNode,
+};
+
+const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = "TB") => {
+    const dagreGraph = new dagre.graphlib.Graph();
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
+    dagreGraph.setGraph({ rankdir: direction, nodesep: 80, ranksep: 100 });
+
+    nodes.forEach((node) => {
+        dagreGraph.setNode(node.id, { width: 180, height: 80 });
+    });
+
+    edges.forEach((edge) => {
+        dagreGraph.setEdge(edge.source, edge.target);
+    });
+
+    dagre.layout(dagreGraph);
+
+    nodes.forEach((node) => {
+        const nodeWithPosition = dagreGraph.node(node.id);
+        node.targetPosition = direction === "TB" ? "top" : "left" as any;
+        node.sourcePosition = direction === "TB" ? "bottom" : "right" as any;
+        node.position = {
+            x: nodeWithPosition.x - 90,
+            y: nodeWithPosition.y - 40,
+        };
+        return node;
+    });
+
+    return { nodes, edges };
+};
 
 export default function DAGPage() {
-    const { user } = useAuth();
     const [projects, setProjects] = useState<Project[]>([]);
     const [selectedProject, setSelectedProject] = useState<string>("");
-    const [nodes, setNodes] = useState<ActivityNode[]>([]);
-    const [layers, setLayers] = useState<DAGLayers | null>(null);
     const [cycleCheck, setCycleCheck] = useState<CycleCheck | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
     useEffect(() => {
         api.get("/projects")
@@ -43,117 +79,142 @@ export default function DAGPage() {
             .catch(() => { });
     }, []);
 
-    const loadDAG = async (projectId: string) => {
+    const loadDAG = useCallback(async (projectId: string) => {
         setLoading(true);
         setError("");
         try {
-            const [nodesRes, layersRes, cycleRes] = await Promise.all([
-                api.get(`/projects/${projectId}/nodes`),
-                api.get(`/projects/${projectId}/dag-layers`).catch(() => null),
-                api.get(`/projects/${projectId}/dag-check`),
+            const [nodesRes, edgesRes, cycleRes] = await Promise.all([
+                api.get<ActivityNode[]>(`/projects/${projectId}/nodes`),
+                api.get<ApiActivityEdge[]>(`/projects/${projectId}/edges`),
+                api.get<CycleCheck>(`/projects/${projectId}/dag-check`),
             ]);
-            setNodes(nodesRes.data);
-            setLayers(layersRes?.data || null);
+
             setCycleCheck(cycleRes.data);
+
+            // Convert API nodes to React Flow nodes
+            const initialNodes: Node[] = nodesRes.data.map((n) => ({
+                id: n.id,
+                type: "activity",
+                position: { x: 0, y: 0 },
+                data: n as unknown as Record<string, unknown>,
+            }));
+
+            // Convert API edges to React Flow edges
+            const initialEdges: Edge[] = edgesRes.data.map((e) => ({
+                id: e.id,
+                source: e.from_node_id,
+                target: e.to_node_id,
+                type: "smoothstep",
+                animated: e.edge_type === "DEPENDS_ON",
+                style: { stroke: e.edge_type === "DEPENDS_ON" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))" },
+                markerEnd: {
+                    type: MarkerType.ArrowClosed,
+                    color: e.edge_type === "DEPENDS_ON" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))",
+                },
+            }));
+
+            // Apply dagre layout
+            const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+                initialNodes,
+                initialEdges
+            );
+
+            setNodes(layoutedNodes);
+            setEdges(layoutedEdges);
         } catch {
             setError("DAG 데이터를 불러오는 데 오류가 발생했습니다.");
+            setNodes([]);
+            setEdges([]);
         }
         setLoading(false);
-    };
+    }, [setNodes, setEdges]);
 
     const handleProjectSelect = (id: string) => {
         setSelectedProject(id);
         if (id) loadDAG(id);
     };
 
-    const statusColors: Record<string, string> = {
-        TODO: "bg-foreground/[0.04] text-foreground/70",
-        IN_PROGRESS: "bg-primary/8 text-primary",
-        DONE: "bg-emerald-500/8 text-emerald-600",
-        BLOCKED: "bg-destructive/8 text-destructive",
+    const handleRefresh = () => {
+        if (selectedProject) loadDAG(selectedProject);
     };
 
-    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+    const handleLayout = (direction: string) => {
+        const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+            nodes,
+            edges,
+            direction
+        );
+        setNodes([...layoutedNodes]);
+        setEdges([...layoutedEdges]);
+    };
 
     return (
-        <div>
-            <h1 className="text-xl font-semibold tracking-tight mb-6">
-                DAG 시각화
-            </h1>
-
-            <div className="mb-6">
-                <select
-                    value={selectedProject}
-                    onChange={(e) => handleProjectSelect(e.target.value)}
-                    className="border border-border/60 bg-transparent rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring/40"
-                >
-                    <option value="">프로젝트 선택...</option>
-                    {projects.map((p) => (
-                        <option key={p.id} value={p.id}>
-                            {p.title}
-                        </option>
-                    ))}
-                </select>
+        <div className="flex flex-col h-[calc(100vh-8rem)]">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 text-primary rounded-xl">
+                        <GitBranch className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-semibold tracking-tight">DAG 시각화</h1>
+                        <p className="text-xs text-muted-foreground mt-0.5">프로젝트의 작업 흐름과 의존성을 인터랙티브하게 확인하세요.</p>
+                    </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                    <select
+                        value={selectedProject}
+                        onChange={(e) => handleProjectSelect(e.target.value)}
+                        className="border border-input bg-background rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring/40 w-64"
+                    >
+                        <option value="">프로젝트 선택...</option>
+                        {projects.map((p) => (
+                            <option key={p.id} value={p.id}>
+                                {p.title}
+                            </option>
+                        ))}
+                    </select>
+                    
+                    <Button variant="outline" size="icon" onClick={handleRefresh} disabled={!selectedProject || loading}>
+                        <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    </Button>
+                </div>
             </div>
 
-            {loading && (
-                <div className="flex justify-center py-10">
-                    <div className="h-5 w-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-                </div>
-            )}
-            {error && <p className="text-destructive text-xs mb-4">{error}</p>}
+            {error && <p className="text-destructive text-sm mb-4">{error}</p>}
 
-            {cycleCheck && (
-                <div
-                    className={`mb-4 p-3 rounded-xl text-xs ${cycleCheck.has_cycle
-                        ? "bg-destructive/8 text-destructive"
-                        : "bg-emerald-500/5 text-emerald-600"
-                        }`}
-                >
-                    {cycleCheck.has_cycle
-                        ? "순환 감지됨 — DAG가 아닙니다."
-                        : "순환 없음 — 유효한 DAG입니다."}
+            {cycleCheck && cycleCheck.has_cycle && (
+                <div className="mb-4 p-3 rounded-xl text-sm bg-destructive/10 border border-destructive/20 text-destructive flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    순환 감지됨 — 유효한 DAG가 아닙니다. 작업 의존성을 확인하세요.
                 </div>
             )}
 
-            {layers && layers.layers.length > 0 && (
-                <div className="space-y-4">
-                    <h2 className="text-sm font-semibold text-foreground">레이어별</h2>
-                    {layers.layers.map((layer, idx) => (
-                        <div key={idx} className="flex items-start gap-4">
-                            <div className="w-16 text-xs text-muted-foreground font-medium pt-2">
-                                Layer {idx}
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {layer.map((nodeId) => {
-                                    const node = nodeMap.get(nodeId);
-                                    return (
-                                        <div
-                                            key={nodeId}
-                                            className={`px-3 py-2 rounded-xl text-xs ${statusColors[node?.status || "TODO"] ||
-                                                "bg-foreground/[0.04]"
-                                                }`}
-                                        >
-                                            <div className="font-medium">
-                                                {node?.title || nodeId.slice(0, 8)}
-                                            </div>
-                                            <div className="text-[10px] mt-0.5 opacity-60">
-                                                {node?.node_type} · {node?.progress}%
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {selectedProject && !loading && nodes.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-10">
-                    이 프로젝트에 노드가 없습니다.
-                </p>
-            )}
+            <div className="flex-1 glass rounded-2xl overflow-hidden border border-border/50 relative">
+                {!selectedProject ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
+                        <GitBranch className="h-12 w-12 opacity-20 mb-4" />
+                        <p>위에서 프로젝트를 선택하여 DAG를 확인하세요.</p>
+                    </div>
+                ) : (
+                    <ReactFlow
+                        nodes={nodes}
+                        edges={edges}
+                        onNodesChange={onNodesChange}
+                        onEdgesChange={onEdgesChange}
+                        nodeTypes={nodeTypes}
+                        fitView
+                        className="bg-foreground/[0.02]"
+                    >
+                        <Background gap={12} size={1} />
+                        <Controls className="bg-background border-border" />
+                        <Panel position="top-right" className="flex gap-2">
+                            <Button size="sm" variant="secondary" onClick={() => handleLayout('TB')} className="text-xs">수직 정렬</Button>
+                            <Button size="sm" variant="secondary" onClick={() => handleLayout('LR')} className="text-xs">수평 정렬</Button>
+                        </Panel>
+                    </ReactFlow>
+                )}
+            </div>
         </div>
     );
 }

@@ -10,6 +10,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
     title: "Lunel System",
     description: "권한 기반 일정·프로젝트 통합 관리 플랫폼",
+    manifest: "/manifest.json",
 };
 
 export default function RootLayout({

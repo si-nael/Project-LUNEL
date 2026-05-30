@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import VisibilityEditor from "@/components/dashboard/visibility-editor";
 
 const SUBTYPES: Record<string, { value: string; label: string }[]> = {
     PROJECT: [
@@ -43,6 +44,7 @@ export default function NewSchedulePage() {
         end_at: "",
         location: "",
         base_importance: 50,
+        visibility_policy_id: "",
     });
     const [loading, setLoading] = useState(false);
 
@@ -76,6 +78,7 @@ export default function NewSchedulePage() {
                     : null,
                 location: form.location || null,
                 base_importance: Number(form.base_importance),
+                visibility_policy_id: form.visibility_policy_id || null,
             });
             toast.success("일정이 생성되었습니다.");
             router.push("/dashboard/schedules");
@@ -226,6 +229,15 @@ export default function NewSchedulePage() {
                                     100
                                 </span>
                             </div>
+                        </div>
+
+                        <div className="space-y-1.5 pt-2 border-t border-border/40">
+                            <Label>접근 정책 (선택)</Label>
+                            <VisibilityEditor
+                                value={form.visibility_policy_id}
+                                onChange={(policyId) => setForm(prev => ({ ...prev, visibility_policy_id: policyId || "" }))}
+                                targetType="schedule"
+                            />
                         </div>
 
                         <Button

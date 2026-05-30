@@ -147,3 +147,39 @@ export interface Scoreboard {
     is_final: boolean;
     created_at: string;
 }
+
+// ── Phase 3 Types ────────────────────────────────────────────
+
+export interface Challenge {
+    id: string;
+    challenge_type: "MATH" | "TEXT" | "LOGIC";
+    challenge_data: {
+        question: string;
+        hint?: string;
+    };
+    max_attempts: number;
+    attempts: number;
+    status: "PENDING" | "VERIFIED" | "FAILED" | "EXPIRED";
+    expires_at: string;
+    created_at: string;
+}
+
+export interface VisibilityPolicy {
+    id: string;
+    scope_type: "PUBLIC" | "AUTHENTICATED" | "GROUP_ONLY" | "ROLE_ONLY" | "GROUP_AND_ROLE" | "PROCEDURAL_KEY";
+    allow_public: boolean;
+    allow_group_ids: string[];
+    allow_role_names: string[];
+    deny_group_ids: string[];
+    rule_expression_json: Record<string, unknown> | null;
+    created_at: string;
+}
+
+export interface HistoryEntry {
+    id: string;
+    changed_by: string;
+    change_type: "CREATE" | "UPDATE" | "DELETE";
+    previous_data: Record<string, unknown> | null;
+    new_data: Record<string, unknown> | null;
+    changed_at: string;
+}
