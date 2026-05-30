@@ -9,6 +9,9 @@ class ActivityNodeCreate(BaseModel):
     node_type: str
     title: str
     order_index: int = 0
+    cost_hours: float = 0.0
+    success_probability: float = 1.0
+    reward_points: float = 0.0
 
 
 class ActivityNodeUpdate(BaseModel):
@@ -16,6 +19,9 @@ class ActivityNodeUpdate(BaseModel):
     status: str | None = None
     progress: int | None = Field(None, ge=0, le=100)
     order_index: int | None = None
+    cost_hours: float | None = None
+    success_probability: float | None = Field(None, ge=0.0, le=1.0)
+    reward_points: float | None = None
 
 
 class ActivityNodeResponse(BaseModel):
@@ -28,6 +34,9 @@ class ActivityNodeResponse(BaseModel):
     status: str
     progress: int
     order_index: int
+    cost_hours: float
+    success_probability: float
+    reward_points: float
     created_at: datetime
 
     model_config = {"from_attributes": True}

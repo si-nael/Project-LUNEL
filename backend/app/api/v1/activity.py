@@ -87,6 +87,9 @@ async def create_node(
         node_type=data.node_type,
         title=data.title,
         order_index=data.order_index,
+        cost_hours=data.cost_hours,
+        success_probability=data.success_probability,
+        reward_points=data.reward_points,
     )
     db.add(node)
     await db.flush()
@@ -113,8 +116,24 @@ async def update_node(
     for key, value in update_data.items():
         setattr(node, key, value)
 
-    # If status changed to DONE, set progress to 100
+    # If status changed to DONE, check dependencies
     if data.status == "DONE":
+        # Validation Engine: Check if all DEPENDS_ON prerequisites are DONE
+        deps_result = await db.execute(
+            select(ActivityNode).join(
+                ActivityEdge, ActivityEdge.from_node_id == ActivityNode.id
+            ).where(
+                ActivityEdge.to_node_id == node.id,
+                ActivityEdge.edge_type == "DEPENDS_ON"
+            )
+        )
+        prerequisites = deps_result.scalars().all()
+        for prereq in prerequisites:
+            if prereq.status.name != "DONE":
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Cannot complete this task. Prerequisite '{prereq.title}' is not DONE."
+                )
         node.progress = 100
 
     await db.flush()

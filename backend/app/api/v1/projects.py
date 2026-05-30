@@ -102,3 +102,26 @@ async def update_project(
     )
 
     return project
+
+
+@router.get("/{project_id}/simulate")
+async def simulate_project(
+    project_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.services.dag_simulator import simulate_project_strategy
+    project = await db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    if project.visibility_policy_id and not await can_user_access(
+        db, current_user, project.visibility_policy_id
+    ):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    try:
+        simulation_result = await simulate_project_strategy(db, project_id)
+        return simulation_result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

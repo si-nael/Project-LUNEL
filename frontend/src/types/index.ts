@@ -92,6 +92,9 @@ export interface ActivityNode {
     status: "PENDING" | "IN_PROGRESS" | "DONE" | "BLOCKED";
     progress: number;
     order_index: number;
+    cost_hours: number;
+    success_probability: number;
+    reward_points: number;
     created_at: string;
 }
 

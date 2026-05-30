@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    String, SmallInteger, Integer, ForeignKey,
+    String, SmallInteger, Integer, ForeignKey, Float,
     Enum as SAEnum, UniqueConstraint, Uuid, DateTime,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -41,6 +41,11 @@ class ActivityNode(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    
+    # EV Simulator Fields
+    cost_hours: Mapped[float] = mapped_column(Float, default=0.0, server_default="0.0")
+    success_probability: Mapped[float] = mapped_column(Float, default=1.0, server_default="1.0")
+    reward_points: Mapped[float] = mapped_column(Float, default=0.0, server_default="0.0")
 
     # Relationships
     project = relationship("Project", lazy="selectin")

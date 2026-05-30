@@ -147,6 +147,7 @@ export default function CommandPalette({
             .finally(() => setLoading(false));
     }, [open]);
 
+
     const navigationItems = useMemo(
         () =>
             DASHBOARD_NAV_ITEMS.map((item) => ({
