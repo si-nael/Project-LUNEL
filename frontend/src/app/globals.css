@@ -4,7 +4,7 @@
 
 @layer base {
     :root {
-        --background: 220 14% 96%;
+        --background: 220 14% 97%;
         --foreground: 222 20% 12%;
         --card: 0 0% 100%;
         --card-foreground: 222 20% 12%;
@@ -23,7 +23,7 @@
         --border: 220 12% 87%;
         --input: 220 12% 87%;
         --ring: 225 60% 48%;
-        --radius: 0.875rem;
+        --radius: 0.625rem;
         --sidebar: 0 0% 100%;
         --sidebar-foreground: 222 15% 30%;
         --sidebar-accent: 225 60% 48%;
@@ -66,61 +66,34 @@
 
     body {
         @apply text-foreground antialiased;
-        background:
-            radial-gradient(ellipse at 15% 0%, hsla(225, 40%, 85%, 0.45) 0%, transparent 55%),
-            radial-gradient(ellipse at 85% 100%, hsla(230, 35%, 88%, 0.35) 0%, transparent 50%),
-            hsl(var(--background));
+        font-family: Inter, Pretendard, "Noto Sans KR", "Segoe UI", sans-serif;
+        background: hsl(var(--background));
         min-height: 100vh;
     }
 }
 
 @layer components {
 
-    /* ---- Liquid Glass ---- */
     .glass {
-        background: linear-gradient(135deg,
-                hsla(0, 0%, 100%, 0.65) 0%,
-                hsla(0, 0%, 100%, 0.45) 100%);
-        backdrop-filter: blur(20px) saturate(1.5);
-        -webkit-backdrop-filter: blur(20px) saturate(1.5);
-        border: 1px solid hsla(0, 0%, 100%, 0.5);
-        box-shadow:
-            0 1px 3px hsla(220, 20%, 20%, 0.04),
-            0 8px 24px hsla(220, 20%, 20%, 0.06),
-            inset 0 1px 0 hsla(0, 0%, 100%, 0.6);
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        box-shadow: 0 1px 2px hsla(220, 20%, 20%, 0.04);
     }
 
     .dark .glass {
-        background: linear-gradient(135deg,
-                hsla(225, 20%, 14%, 0.7) 0%,
-                hsla(225, 20%, 10%, 0.55) 100%);
-        border-color: hsla(0, 0%, 100%, 0.08);
-        box-shadow:
-            0 1px 3px hsla(0, 0%, 0%, 0.15),
-            0 8px 24px hsla(0, 0%, 0%, 0.2),
-            inset 0 1px 0 hsla(0, 0%, 100%, 0.04);
+        background: hsl(var(--card));
+        border-color: hsl(var(--border));
+        box-shadow: 0 1px 2px hsla(0, 0%, 0%, 0.18);
     }
 
     .glass-subtle {
-        background: linear-gradient(160deg,
-                hsla(0, 0%, 100%, 0.45) 0%,
-                hsla(0, 0%, 100%, 0.28) 100%);
-        backdrop-filter: blur(14px) saturate(1.3);
-        -webkit-backdrop-filter: blur(14px) saturate(1.3);
-        border: 1px solid hsla(0, 0%, 100%, 0.35);
-        box-shadow:
-            0 1px 2px hsla(220, 20%, 20%, 0.03),
-            inset 0 1px 0 hsla(0, 0%, 100%, 0.4);
+        background: hsl(var(--sidebar));
+        border-right: 1px solid hsl(var(--sidebar-border));
     }
 
     .dark .glass-subtle {
-        background: linear-gradient(160deg,
-                hsla(225, 20%, 12%, 0.5) 0%,
-                hsla(225, 20%, 9%, 0.35) 100%);
-        border-color: hsla(0, 0%, 100%, 0.05);
-        box-shadow:
-            0 1px 2px hsla(0, 0%, 0%, 0.12),
-            inset 0 1px 0 hsla(0, 0%, 100%, 0.03);
+        background: hsl(var(--sidebar));
+        border-color: hsl(var(--sidebar-border));
     }
 }
 
@@ -137,4 +110,4 @@
     0% { transform: scale(0.5); opacity: 0; }
     70% { transform: scale(1.08); }
     100% { transform: scale(1); opacity: 1; }
-}
+}

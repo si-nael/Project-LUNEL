@@ -23,6 +23,7 @@ export interface Group {
     is_temporary: boolean;
     expires_at: string | null;
     is_active: boolean;
+    visibility_policy_id?: string | null;
     created_at: string;
     member_count: number;
 }
@@ -89,12 +90,17 @@ export interface ActivityNode {
     related_schedule_id: string | null;
     node_type: "MILESTONE" | "TASK" | "SUB_TASK";
     title: string;
-    status: "PENDING" | "IN_PROGRESS" | "DONE" | "BLOCKED";
+    status: "TODO" | "IN_PROGRESS" | "DONE" | "BLOCKED";
     progress: number;
     order_index: number;
     cost_hours: number;
     success_probability: number;
     reward_points: number;
+    assigned_user_id: string | null;
+    available_at: string | null;
+    due_at: string | null;
+    completed_at: string | null;
+    version: number;
     created_at: string;
 }
 
@@ -122,7 +128,18 @@ export interface Competition {
     event_id: string;
     max_participants: number | null;
     scoring_rule: Record<string, unknown> | null;
+    opens_at: string | null;
+    closes_at: string | null;
+    freeze_at: string | null;
+    scoreboard_public: boolean;
     created_at: string;
+}
+
+export interface CompetitionListItem extends Competition {
+    title: string;
+    event_status: string;
+    participant_count: number;
+    problem_count: number;
 }
 
 export interface Participant {
@@ -130,17 +147,39 @@ export interface Participant {
     competition_id: string;
     user_id: string;
     registered_at: string;
-    status: "REGISTERED" | "CHECKED_IN" | "DISQUALIFIED" | "WITHDRAWN";
+    status: "REGISTERED" | "CONFIRMED" | "WITHDRAWN";
 }
 
 export interface Submission {
     id: string;
     competition_id: string;
     participant_id: string;
+    competition_problem_id: string | null;
     content: Record<string, unknown> | null;
+    language: string | null;
+    source_code: string | null;
+    verdict:
+    | "PENDING"
+    | "QUEUED"
+    | "RUNNING"
+    | "ACCEPTED"
+    | "PARTIAL"
+    | "WRONG_ANSWER"
+    | "TIME_LIMIT"
+    | "MEMORY_LIMIT"
+    | "RUNTIME_ERROR"
+    | "COMPILE_ERROR"
+    | "JUDGE_ERROR"
+    | "MANUAL_REVIEW";
     score: number | null;
+    penalty: number;
+    execution_time_ms: number | null;
+    memory_kb: number | null;
+    judge_message: string | null;
+    result_detail: Record<string, unknown> | null;
     submitted_at: string;
     graded_at: string | null;
+    judged_at: string | null;
 }
 
 export interface Scoreboard {
@@ -149,6 +188,157 @@ export interface Scoreboard {
     snapshot_data: Record<string, unknown>;
     is_final: boolean;
     created_at: string;
+}
+
+export interface Problem {
+    id: string;
+    slug: string;
+    title: string;
+    statement_md: string;
+    input_format_md: string;
+    output_format_md: string;
+    constraints_md: string;
+    notes_md: string;
+    time_limit_ms: number;
+    memory_limit_mb: number;
+    checker_type: "EXACT" | "TOKENS" | "FLOAT" | "SPECIAL" | "INTERACTIVE" | "MANUAL";
+    scoring_mode: "BINARY" | "SUBTASK" | "OUTPUT_ONLY" | "MANUAL";
+    status: "DRAFT" | "REVIEW" | "READY" | "PUBLISHED" | "ARCHIVED";
+    difficulty: number | null;
+    version: number;
+    created_by: string;
+    visibility_policy_id: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ProblemTestCase {
+    id: string;
+    group_id: string;
+    name: string;
+    input_data: string;
+    expected_output: string;
+    is_sample: boolean;
+    points: number | null;
+    order_index: number;
+    metadata_json: Record<string, unknown> | null;
+}
+
+export interface ProblemTestGroup {
+    id: string;
+    problem_id: string;
+    name: string;
+    points: number;
+    order_index: number;
+    dependency_group_ids: string[];
+    scoring_policy: Record<string, unknown> | null;
+    test_cases: ProblemTestCase[];
+}
+
+export interface ProblemSolution {
+    id: string;
+    problem_id: string;
+    title: string;
+    language: string;
+    source_code: string;
+    expected_complexity: string | null;
+    is_reference: boolean;
+    author_id: string;
+    created_at: string;
+}
+
+export interface ProblemRevision {
+    id: string;
+    problem_id: string;
+    version: number;
+    snapshot_data: Record<string, unknown>;
+    note: string | null;
+    created_by: string;
+    created_at: string;
+}
+
+export interface ProblemPackage extends Problem {
+    test_groups: ProblemTestGroup[];
+    solutions: ProblemSolution[];
+    revisions: ProblemRevision[];
+}
+
+export interface CompetitionProblem {
+    id: string;
+    competition_id: string;
+    problem_id: string;
+    label: string;
+    title_override: string | null;
+    points: number;
+    order_index: number;
+    opens_at: string | null;
+    closes_at: string | null;
+    workflow_node_id: string | null;
+    scoring_config: Record<string, unknown> | null;
+    problem: Problem;
+}
+
+export interface LiveScoreboardRow {
+    rank: number;
+    participant_id: string;
+    user_id: string;
+    name: string;
+    team_name: string | null;
+    score: number;
+    solved: number;
+    penalty: number;
+    last_improvement_at: string | null;
+    problems: Record<
+        string,
+        {
+            solved: boolean;
+            attempts: number;
+            score: number;
+            max_score?: number;
+            penalty?: number;
+            verdict?: string | null;
+        }
+    >;
+    frozen_submissions: number;
+}
+
+export interface LiveScoreboard {
+    competition_id: string;
+    mode: "IOI" | "ICPC" | string;
+    generated_at: string;
+    frozen: boolean;
+    freeze_at: string | null;
+    problems: { id: string; label: string; title: string; points: number }[];
+    rankings: LiveScoreboardRow[];
+}
+
+export interface WorkflowProjection {
+    project_id: string;
+    generated_at: string;
+    summary: {
+        total: number;
+        ready: number;
+        blocked: number;
+        overdue: number;
+        progress: number;
+    };
+    nodes: Array<{
+        id: string;
+        title: string;
+        type: string;
+        status: string;
+        progress: number;
+        assigned_user_id: string | null;
+        available_at: string | null;
+        due_at: string | null;
+        completed_at: string | null;
+        ready: boolean;
+        overdue: boolean;
+        blocked_by: string[];
+        unlocks: string[];
+        version: number;
+    }>;
+    edges: Array<{ id: string; from: string; to: string; type: string }>;
 }
 
 // ── Phase 3 Types ────────────────────────────────────────────

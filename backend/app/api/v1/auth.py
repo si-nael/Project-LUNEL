@@ -23,12 +23,18 @@ from app.schemas.user import (
 )
 from fastapi.security import HTTPAuthorizationCredentials
 from app.auth.deps import security_scheme
+from app.services.token_blocklist import block_token, is_token_blocked
 
 router = APIRouter()
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
+    if data.role.value not in ("STUDENT", "EXTERNAL"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="교사·관리자 계정은 관리자가 별도로 부여해야 합니다.",
+        )
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none() is not None:
         raise HTTPException(
@@ -81,10 +87,7 @@ async def refresh_token(data: TokenRefresh, db: AsyncSession = Depends(get_db)):
             detail="Invalid refresh token",
         )
 
-    # Check Redis Blocklist
-    from app.redis import redis_client
-    is_blocked = await redis_client.get(f"blocklist:{data.refresh_token}")
-    if is_blocked:
+    if await is_token_blocked(data.refresh_token):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has been logged out",
@@ -111,22 +114,17 @@ async def logout(
     data: LogoutRequest,
     credentials: HTTPAuthorizationCredentials = Depends(security_scheme)
 ):
-    from app.redis import redis_client
     from datetime import datetime, timezone
     
     # Block access token
     access_payload = decode_token(credentials.credentials)
     if access_payload and "exp" in access_payload:
         exp = datetime.fromtimestamp(access_payload["exp"], tz=timezone.utc)
-        ttl = int((exp - datetime.now(timezone.utc)).total_seconds())
-        if ttl > 0:
-            await redis_client.setex(f"blocklist:{credentials.credentials}", ttl, "1")
+        await block_token(credentials.credentials, exp)
             
     # Block refresh token
     if data.refresh_token:
         refresh_payload = decode_token(data.refresh_token)
         if refresh_payload and "exp" in refresh_payload:
             exp = datetime.fromtimestamp(refresh_payload["exp"], tz=timezone.utc)
-            ttl = int((exp - datetime.now(timezone.utc)).total_seconds())
-            if ttl > 0:
-                await redis_client.setex(f"blocklist:{data.refresh_token}", ttl, "1")
+            await block_token(data.refresh_token, exp)

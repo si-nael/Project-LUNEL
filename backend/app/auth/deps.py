@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.security import decode_token
 from app.database import get_db
 from app.models.user import User
+from app.services.token_blocklist import is_token_blocked
 
 security_scheme = HTTPBearer()
 
@@ -23,10 +24,7 @@ async def get_current_user(
             detail="Invalid or expired token",
         )
 
-    # Check Redis Blocklist
-    from app.redis import redis_client
-    is_blocked = await redis_client.get(f"blocklist:{credentials.credentials}")
-    if is_blocked:
+    if await is_token_blocked(credentials.credentials):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has been logged out",

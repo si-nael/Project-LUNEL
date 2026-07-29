@@ -8,6 +8,7 @@ from app.auth.deps import get_current_user
 from app.database import get_db
 from app.models.activity import ActivityNode, ActivityEdge
 from app.models.project import Project
+from app.models.enums import NodeStatus
 from app.models.user import User
 from app.schemas.activity import (
     ActivityNodeCreate, ActivityNodeUpdate, ActivityNodeResponse,
@@ -84,9 +85,12 @@ async def create_node(
         project_id=project_id,
         parent_id=data.parent_id,
         related_schedule_id=data.related_schedule_id,
+        assigned_user_id=data.assigned_user_id,
         node_type=data.node_type,
         title=data.title,
         order_index=data.order_index,
+        available_at=data.available_at,
+        due_at=data.due_at,
         cost_hours=data.cost_hours,
         success_probability=data.success_probability,
         reward_points=data.reward_points,
@@ -113,28 +117,18 @@ async def update_node(
         raise HTTPException(status_code=404, detail="Node not found")
 
     update_data = data.model_dump(exclude_unset=True)
+    requested_status = update_data.pop("status", None)
     for key, value in update_data.items():
         setattr(node, key, value)
 
-    # If status changed to DONE, check dependencies
-    if data.status == "DONE":
-        # Validation Engine: Check if all DEPENDS_ON prerequisites are DONE
-        deps_result = await db.execute(
-            select(ActivityNode).join(
-                ActivityEdge, ActivityEdge.from_node_id == ActivityNode.id
-            ).where(
-                ActivityEdge.to_node_id == node.id,
-                ActivityEdge.edge_type == "DEPENDS_ON"
-            )
-        )
-        prerequisites = deps_result.scalars().all()
-        for prereq in prerequisites:
-            if prereq.status.name != "DONE":
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Cannot complete this task. Prerequisite '{prereq.title}' is not DONE."
-                )
-        node.progress = 100
+    if requested_status is not None:
+        from app.services.workflow_engine import transition_node
+        try:
+            await transition_node(db, node, NodeStatus(requested_status))
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+    else:
+        node.version += 1
 
     await db.flush()
 

@@ -3,8 +3,11 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 venv/
+.venv/
 .env
 *.db
+*.db-wal
+*.db-shm
 
 # Frontend
 frontend/node_modules/

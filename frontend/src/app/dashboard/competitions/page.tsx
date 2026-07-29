@@ -1,236 +1,278 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { Plus, Radio, Trophy } from "lucide-react";
 import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Users, FileText } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { engineFetch, enginePost } from "@/lib/engine-api";
+import type {
+    EngineProblem,
+    EngineRuntime,
+    RuntimeMode,
+    RuntimeState,
+} from "@/types/engine";
 
-interface Event {
-    id: string;
-    event_type: string;
-    title: string;
-    status: string;
-    created_at: string;
-}
-
-interface CompetitionDetail {
-    id: string;
-    event_id: string;
-    max_participants: number | null;
-    scoring_rule: Record<string, unknown> | null;
-    created_at: string;
-}
-
-interface Participant {
-    id: string;
-    user_id: string;
-    status: string;
-    registered_at: string;
-}
-
-const STATUS_LABELS: Record<string, string> = {
-    PLANNED: "준비중",
-    REGISTRATION_OPEN: "접수중",
-    IN_PROGRESS: "진행중",
-    JUDGING: "심사중",
-    COMPLETED: "완료",
+const STATE_LABEL: Record<RuntimeState, string> = {
+    DRAFT: "초안",
+    REGISTRATION: "등록 중",
+    RUNNING: "진행 중",
+    FROZEN: "스코어보드 동결",
+    FINISHED: "종료",
     CANCELLED: "취소",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-    PLANNED: "secondary",
-    REGISTRATION_OPEN: "default",
-    IN_PROGRESS: "default",
-    JUDGING: "default",
-    COMPLETED: "secondary",
-    CANCELLED: "destructive",
-};
-
 export default function CompetitionsPage() {
-    const [events, setEvents] = useState<Event[]>([]);
+    const [runtimes, setRuntimes] = useState<EngineRuntime[]>([]);
+    const [problems, setProblems] = useState<EngineProblem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-    const [competition, setCompetition] = useState<CompetitionDetail | null>(null);
-    const [participants, setParticipants] = useState<Participant[]>([]);
-    const [joining, setJoining] = useState(false);
+    const [showCreate, setShowCreate] = useState(false);
+    const [title, setTitle] = useState("");
+    const [mode, setMode] = useState<RuntimeMode>("IOI");
+    const [selected, setSelected] = useState<string[]>([]);
+    const [creating, setCreating] = useState(false);
+
+    const load = async () => {
+        try {
+            const [nextRuntimes, nextProblems] = await Promise.all([
+                engineFetch<EngineRuntime[]>("v1/runtimes"),
+                engineFetch<EngineProblem[]>("v1/problems"),
+            ]);
+            setRuntimes(nextRuntimes);
+            setProblems(nextProblems);
+        } catch (caught) {
+            toast.error(caught instanceof Error ? caught.message : "대회를 불러오지 못했습니다.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        api.get<Event[]>("/events")
-            .then(({ data }) => setEvents(data))
-            .catch(() => toast.error("이벤트 목록을 불러올 수 없습니다."))
-            .finally(() => setLoading(false));
+        void load();
     }, []);
 
-    const selectEvent = async (event: Event) => {
-        setSelectedEvent(event);
-        setCompetition(null);
-        setParticipants([]);
-        try {
-            // Try to find a competition linked to this event
-            // The API exposes GET /competitions/{id}, but we need to search by event_id
-            // For now, we'll try fetching - in production this would be a query param
-            const res = await api.get(`/events/${event.id}`);
-            if (res.data) {
-                // Event detail loaded - competition may be linked
-                setSelectedEvent(res.data);
-            }
-        } catch {
-            // No competition for this event
-        }
-    };
+    const readyProblems = problems.filter((problem) => problem.status === "READY");
 
-    const joinCompetition = async (competitionId: string) => {
-        setJoining(true);
-        try {
-            await api.post(`/competitions/${competitionId}/participants`);
-            toast.success("참가 신청이 완료되었습니다.");
-            // Refresh participants
-            const res = await api.get<Participant[]>(
-                `/competitions/${competitionId}/participants`
-            );
-            setParticipants(res.data);
-        } catch (err: unknown) {
-            const axiosErr = err as {
-                response?: { data?: { detail?: string } };
-            };
-            toast.error(
-                axiosErr.response?.data?.detail || "참가 신청에 실패했습니다."
-            );
-        }
-        setJoining(false);
-    };
-
-    if (loading) {
-        return (
-            <div className="flex justify-center py-20">
-                <div className="h-5 w-5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-            </div>
+    const toggleProblem = (id: string) => {
+        setSelected((current) =>
+            current.includes(id)
+                ? current.filter((value) => value !== id)
+                : [...current, id]
         );
-    }
+    };
+
+    const createRuntime = async () => {
+        if (!title.trim() || selected.length === 0) {
+            toast.error("대회 이름과 한 개 이상의 READY 문제를 선택하세요.");
+            return;
+        }
+        setCreating(true);
+        try {
+            const runtime = await enginePost<EngineRuntime>("v1/runtimes", {
+                title: title.trim(),
+                mode,
+                wrong_penalty_minutes: 20,
+                problems: selected.map((problemId, index) => ({
+                    problem_id: problemId,
+                    label: String.fromCharCode(65 + index),
+                })),
+            });
+            setTitle("");
+            setMode("IOI");
+            setSelected([]);
+            setShowCreate(false);
+            await load();
+            toast.success(`${runtime.title} 런타임을 생성했습니다.`);
+        } catch (caught) {
+            toast.error(caught instanceof Error ? caught.message : "대회를 만들지 못했습니다.");
+        } finally {
+            setCreating(false);
+        }
+    };
 
     return (
-        <div>
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-xl font-semibold tracking-tight">
-                    대회 / 행사
-                </h1>
-            </div>
+        <div className="space-y-6">
+            <header className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                        <Radio className="h-4 w-4" />
+                        ENGINE RUNTIMES
+                    </div>
+                    <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+                        대회
+                    </h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        엔진에 대회 런타임을 만들고 개시, 동결, 종료까지 상태를 전이합니다.
+                    </p>
+                </div>
+                <Button onClick={() => setShowCreate((value) => !value)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    대회 열기
+                </Button>
+            </header>
 
-            {events.length === 0 ? (
+            {showCreate && (
                 <Card>
-                    <CardContent className="py-12 text-center">
-                        <Trophy className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-                        <p className="text-sm text-muted-foreground">
-                            등록된 이벤트가 없습니다.
+                    <CardHeader>
+                        <CardTitle className="text-sm">새 대회 런타임</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-5">
+                        <div className="grid gap-4 sm:grid-cols-[1fr_180px]">
+                            <div className="space-y-2">
+                                <Label htmlFor="runtime-title">대회 이름</Label>
+                                <Input
+                                    id="runtime-title"
+                                    value={title}
+                                    onChange={(event) => setTitle(event.target.value)}
+                                    placeholder="2026 교내 알고리즘 챌린지"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="runtime-mode">스코어 방식</Label>
+                                <select
+                                    id="runtime-mode"
+                                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                                    value={mode}
+                                    onChange={(event) =>
+                                        setMode(event.target.value as RuntimeMode)
+                                    }
+                                >
+                                    <option value="IOI">IOI 점수제</option>
+                                    <option value="ICPC">ICPC 해결/페널티</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <Label>문제 구성</Label>
+                            {readyProblems.length === 0 ? (
+                                <p className="mt-2 rounded-md border p-4 text-sm text-muted-foreground">
+                                    READY 문제가 없습니다. 먼저 문제 메뉴에서 문제를 준비하세요.
+                                </p>
+                            ) : (
+                                <div className="mt-2 divide-y rounded-md border">
+                                    {readyProblems.map((problem) => {
+                                        const index = selected.indexOf(problem.id);
+                                        return (
+                                            <label
+                                                key={problem.id}
+                                                className="flex cursor-pointer items-center gap-3 p-3 hover:bg-muted/50"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={index >= 0}
+                                                    onChange={() =>
+                                                        toggleProblem(problem.id)
+                                                    }
+                                                />
+                                                <span className="w-6 font-mono text-xs text-muted-foreground">
+                                                    {index >= 0
+                                                        ? String.fromCharCode(65 + index)
+                                                        : "—"}
+                                                </span>
+                                                <span className="min-w-0 flex-1 truncate text-sm">
+                                                    {problem.title}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {problem.default_points}점
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end">
+                            <Button disabled={creating} onClick={createRuntime}>
+                                {creating ? "생성 중" : "런타임 생성"}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {loading ? (
+                <p className="py-16 text-center text-sm text-muted-foreground">
+                    대회 런타임을 불러오는 중입니다.
+                </p>
+            ) : runtimes.length === 0 ? (
+                <Card>
+                    <CardContent className="py-16 text-center">
+                        <Trophy className="mx-auto h-8 w-8 text-muted-foreground" />
+                        <p className="mt-3 text-sm text-muted-foreground">
+                            아직 생성된 대회가 없습니다.
                         </p>
                     </CardContent>
                 </Card>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {events.map((event) => (
-                        <Card
-                            key={event.id}
-                            className={`cursor-pointer transition-all hover:shadow-md ${selectedEvent?.id === event.id
-                                    ? "ring-2 ring-primary/30"
-                                    : ""
-                                }`}
-                            onClick={() => selectEvent(event)}
+                <div className="grid gap-4 md:grid-cols-2">
+                    {runtimes.map((runtime) => (
+                        <Link
+                            key={runtime.id}
+                            href={`/dashboard/competitions/${runtime.id}`}
                         >
-                            <CardHeader className="pb-3">
-                                <div className="flex items-start justify-between">
-                                    <CardTitle className="text-sm">
-                                        {event.title}
-                                    </CardTitle>
-                                    <Badge
-                                        variant={
-                                            (STATUS_COLORS[event.status] as
-                                                | "default"
-                                                | "secondary"
-                                                | "destructive") || "secondary"
-                                        }
-                                    >
-                                        {STATUS_LABELS[event.status] ||
-                                            event.status}
-                                    </Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                    <span className="flex items-center gap-1">
-                                        <Trophy className="h-3 w-3" />
-                                        {event.event_type}
-                                    </span>
-                                    <span>
-                                        {new Date(
-                                            event.created_at
-                                        ).toLocaleDateString("ko-KR")}
-                                    </span>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            )}
-
-            {/* Competition detail panel */}
-            {competition && (
-                <div className="mt-6 glass rounded-2xl p-5">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-sm font-semibold">대회 정보</h2>
-                        <Button
-                            size="sm"
-                            disabled={joining}
-                            onClick={() => joinCompetition(competition.id)}
-                        >
-                            <Users className="h-3.5 w-3.5 mr-1.5" />
-                            {joining ? "신청 중..." : "참가 신청"}
-                        </Button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="p-3 rounded-xl bg-secondary/50">
-                            <p className="text-xs text-muted-foreground">
-                                최대 참가 인원
-                            </p>
-                            <p className="text-lg font-semibold mt-1">
-                                {competition.max_participants ?? "제한 없음"}
-                            </p>
-                        </div>
-                        <div className="p-3 rounded-xl bg-secondary/50">
-                            <p className="text-xs text-muted-foreground">
-                                현재 참가자
-                            </p>
-                            <p className="text-lg font-semibold mt-1">
-                                {participants.length}명
-                            </p>
-                        </div>
-                    </div>
-
-                    {participants.length > 0 && (
-                        <div>
-                            <h3 className="text-xs font-medium text-muted-foreground mb-2">
-                                참가자 목록
-                            </h3>
-                            <div className="space-y-1">
-                                {participants.map((p) => (
-                                    <div
-                                        key={p.id}
-                                        className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-secondary/30"
-                                    >
-                                        <span className="text-sm">
-                                            {p.user_id.slice(0, 8)}...
-                                        </span>
-                                        <Badge variant="outline" className="text-[10px]">
-                                            {p.status}
+                            <Card className="h-full transition-colors hover:border-primary/40">
+                                <CardHeader>
+                                    <div className="flex items-start justify-between gap-4">
+                                        <CardTitle className="text-base">
+                                            {runtime.title}
+                                        </CardTitle>
+                                        <Badge
+                                            variant={
+                                                runtime.state === "RUNNING"
+                                                    ? "default"
+                                                    : "secondary"
+                                            }
+                                        >
+                                            {STATE_LABEL[runtime.state]}
                                         </Badge>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-4 gap-3 text-center">
+                                        <div>
+                                            <p className="text-lg font-semibold">
+                                                {runtime.mode}
+                                            </p>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                방식
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-semibold">
+                                                {runtime.problems.length}
+                                            </p>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                문제
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-semibold">
+                                                {runtime.participant_count}
+                                            </p>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                참가자
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-lg font-semibold">
+                                                {runtime.submission_count}
+                                            </p>
+                                            <p className="text-[11px] text-muted-foreground">
+                                                제출
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </Link>
+                    ))}
                 </div>
             )}
         </div>

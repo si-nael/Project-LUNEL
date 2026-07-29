@@ -27,6 +27,9 @@ class ActivityNode(Base):
     related_schedule_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid, ForeignKey("schedules.id"), nullable=True
     )
+    assigned_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.id"), nullable=True
+    )
     node_type: Mapped[NodeType] = mapped_column(
         SAEnum(NodeType, name="node_type_enum", create_constraint=True),
         nullable=False,
@@ -41,6 +44,16 @@ class ActivityNode(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    available_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    due_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     
     # EV Simulator Fields
     cost_hours: Mapped[float] = mapped_column(Float, default=0.0, server_default="0.0")
@@ -52,6 +65,7 @@ class ActivityNode(Base):
     parent = relationship("ActivityNode", remote_side=[id], lazy="selectin")
     children = relationship("ActivityNode", back_populates="parent", lazy="selectin")
     schedule = relationship("Schedule", lazy="selectin")
+    assignee = relationship("User", foreign_keys=[assigned_user_id], lazy="selectin")
 
 
 class ActivityEdge(Base):

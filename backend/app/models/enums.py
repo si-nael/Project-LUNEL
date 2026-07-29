@@ -158,3 +158,44 @@ class ChallengeStatus(str, enum.Enum):
     VERIFIED = "VERIFIED"
     FAILED = "FAILED"
     EXPIRED = "EXPIRED"
+
+
+# Competition authoring / judging enums
+
+class ProblemStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    REVIEW = "REVIEW"
+    READY = "READY"
+    PUBLISHED = "PUBLISHED"
+    ARCHIVED = "ARCHIVED"
+
+
+class CheckerType(str, enum.Enum):
+    EXACT = "EXACT"
+    TOKENS = "TOKENS"
+    FLOAT = "FLOAT"
+    SPECIAL = "SPECIAL"
+    INTERACTIVE = "INTERACTIVE"
+    MANUAL = "MANUAL"
+
+
+class ProblemScoringMode(str, enum.Enum):
+    BINARY = "BINARY"
+    SUBTASK = "SUBTASK"
+    OUTPUT_ONLY = "OUTPUT_ONLY"
+    MANUAL = "MANUAL"
+
+
+class SubmissionVerdict(str, enum.Enum):
+    PENDING = "PENDING"
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    ACCEPTED = "ACCEPTED"
+    PARTIAL = "PARTIAL"
+    WRONG_ANSWER = "WRONG_ANSWER"
+    TIME_LIMIT = "TIME_LIMIT"
+    MEMORY_LIMIT = "MEMORY_LIMIT"
+    RUNTIME_ERROR = "RUNTIME_ERROR"
+    COMPILE_ERROR = "COMPILE_ERROR"
+    JUDGE_ERROR = "JUDGE_ERROR"
+    MANUAL_REVIEW = "MANUAL_REVIEW"

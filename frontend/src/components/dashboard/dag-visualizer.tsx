@@ -88,7 +88,7 @@ export default function DagVisualizer({ nodes: activityNodes, edges: activityEdg
                 border: "1px solid hsl(var(--border))",
                 borderRadius: "12px",
                 padding: 0,
-                opacity: an.status === 'LOCKED' ? 0.5 : 1,
+                opacity: an.status === "BLOCKED" ? 0.55 : 1,
             },
         }));
     }, [activityNodes]);
